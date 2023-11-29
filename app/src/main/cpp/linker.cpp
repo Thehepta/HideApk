@@ -69,14 +69,18 @@ soinfo* soinfo_alloc(ApkNativeInfo &apkNativeInfo){
 
     soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) resolve_elf_internal_symbol(get_android_linker_path(),
                                                                                                                                                                                                                                      "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
-//    android_namespace_t * default_namespace = getAndroidNamespace();
-    struct stat file_stat;
-//    fstat(apkNativeInfo.fd, nullptr);
-    Dl_info info;
-    void* addr = (void*)soinfo_alloc; // 你要查询的地址，这里以main函数的地址为例
-    soinfo * local_si = find_containing_library(addr);
 
+    void** g_soinfo_links_allocator = static_cast<void **>(resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj"));
+    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot))resolve_elf_internal_symbol(get_android_linker_path(),"__dl__ZN20LinkerBlockAllocator11protect_allEi");
+    protect_all(*g_soinfo_links_allocator,PROT_READ | PROT_WRITE);
+//    struct stat file_stat;
+//    Dl_info info;
+//    void* addr = (void*)soinfo_alloc; // 你要查询的地址，这里以main函数的地址为例
+//    soinfo * local_si = find_containing_library(addr);
     soinfo* si = soinf_alloc_fun(nullptr,apkNativeInfo.libname.c_str(), nullptr,0,RTLD_GLOBAL);
+    protect_all(*g_soinfo_links_allocator,PROT_READ);
+
+
 
     return si;
 }
