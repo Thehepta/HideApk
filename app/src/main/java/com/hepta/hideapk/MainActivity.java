@@ -35,8 +35,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         // Example of a call to a native method
-        Button tv = binding.sampleText;
-        tv.setText(stringFromJNI());
+        Button tv = binding.LoadApk;
         tv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -46,15 +45,22 @@ public class MainActivity extends AppCompatActivity {
                         try {
 
                             ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
-//                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
-//                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.adirf.LoadEntry");
-//
-//                            Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
-//                            method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
-//                            Log.e("Rzx",applicationInfo.sourceDir);
-                            hideApk(applicationInfo.sourceDir);
+                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
+                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.adirf.LoadEntry");
+
+                            Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
+                            method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
+                            Log.e("Rzx",applicationInfo.sourceDir);
 
                         } catch (PackageManager.NameNotFoundException  e) {
+                            throw new RuntimeException(e);
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        } catch (InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        } catch (NoSuchMethodException e) {
+                            throw new RuntimeException(e);
+                        } catch (IllegalAccessException e) {
                             throw new RuntimeException(e);
                         }
                     }
@@ -62,10 +68,18 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        Button btn2 = binding.sampleText2;
+        Button btn2 = binding.LoadSo;
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ApplicationInfo applicationInfo = null;
+                try {
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                hideApk(applicationInfo.sourceDir);
+
 //                hideApk("com.hepta.adirf");
             }
         });

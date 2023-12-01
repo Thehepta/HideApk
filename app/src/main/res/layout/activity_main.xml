@@ -7,7 +7,7 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/sample_text"
+        android:id="@+id/Load_Apk"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="load apk!"
@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/sample_text2"
+        android:id="@+id/Load_So"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Load so!"
