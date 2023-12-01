@@ -39,7 +39,7 @@ static const char *get_android_linker_path() {
         return (const char *)"/system/bin/linker64";
     }
 #else
-    if (get_android_system_version() >= Q) {
+    if (get_android_system_version() >= 29) {
         return (const char *)"/apex/com.android.runtime/bin/linker";
     } else {
         return (const char *)"/system/bin/linker";
