@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         Button tv = binding.sampleText;
-        tv.setText(stringFromJNI());
         tv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -46,15 +45,14 @@ public class MainActivity extends AppCompatActivity {
                         try {
 
                             ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
-//                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
-//                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.adirf.LoadEntry");
-//
-//                            Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
-//                            method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
-//                            Log.e("Rzx",applicationInfo.sourceDir);
-                            hideApk(applicationInfo.sourceDir);
+                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
+                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.adirf.LoadEntry");
 
-                        } catch (PackageManager.NameNotFoundException  e) {
+                            Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
+                            method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
+                            Log.e("Rzx",applicationInfo.sourceDir);
+
+                        } catch (PackageManager.NameNotFoundException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                             throw new RuntimeException(e);
                         }
                     }
@@ -66,7 +64,18 @@ public class MainActivity extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                hideApk("com.hepta.adirf");
+                new Thread(){
+                    @Override
+                    public void run() {
+
+                        try {
+                            ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
+                            hideApk(applicationInfo.sourceDir);
+                        } catch (PackageManager.NameNotFoundException  e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }.start();
             }
         });
     }
