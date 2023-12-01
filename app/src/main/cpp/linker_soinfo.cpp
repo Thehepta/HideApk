@@ -4,12 +4,22 @@
 #include "linker_soinfo.h"
 #include "linker_debug.h"
 #include "linker_phdr.h"
-
+#include "linker_utils.h"
 
 
 int g_argc = 0;
 char** g_argv = nullptr;
 char** g_envp = nullptr;
+
+#if defined(__LP64__)
+static constexpr const char* kLibPath = "lib64";
+#else
+static constexpr const char* kLibPath = "lib";
+#endif
+
+
+
+
 
 bool soinfo::prelink_image() {
     if (flags_ & FLAG_PRELINKED) return true;
@@ -409,7 +419,71 @@ bool soinfo::prelink_image() {
                 break;
         }
     }
+
+    DEBUG("si->base = %p, si->strtab = %p, si->symtab = %p",
+          reinterpret_cast<void*>(base), strtab_, symtab_);
+
+    // Sanity checks.
+    if (relocating_linker && needed_count != 0) {
+        DL_ERR("linker cannot have DT_NEEDED dependencies on other libraries");
+        return false;
+    }
+    if (nbucket_ == 0 && gnu_nbucket_ == 0) {
+        DL_ERR("empty/missing DT_HASH/DT_GNU_HASH in \"%s\" "
+               "(new hash type from the future?)", get_realpath());
+        return false;
+    }
+    if (strtab_ == nullptr) {
+        DL_ERR("empty/missing DT_STRTAB in \"%s\"", get_realpath());
+        return false;
+    }
+    if (symtab_ == nullptr) {
+        DL_ERR("empty/missing DT_SYMTAB in \"%s\"", get_realpath());
+        return false;
+    }
+
+    // second pass - parse entries relying on strtab
+    for (ElfW(Dyn)* d = dynamic; d->d_tag != DT_NULL; ++d) {
+        switch (d->d_tag) {
+            case DT_SONAME:
+                set_soname(get_string(d->d_un.d_val));
+                break;
+            case DT_RUNPATH:
+                set_dt_runpath(get_string(d->d_un.d_val));
+                break;
+        }
+    }
+
+    // Before M release linker was using basename in place of soname.
+    // In the case when dt_soname is absent some apps stop working
+    // because they can't find dt_needed library by soname.
+    // This workaround should keep them working. (Applies only
+    // for apps targeting sdk version < M.) Make an exception for
+    // the main executable and linker; they do not need to have dt_soname.
+    // TODO: >= O the linker doesn't need this workaround.
+//    if (soname_ == nullptr &&
+//        this != solist_get_somain() &&
+//        (flags_ & FLAG_LINKER) == 0 &&
+//        android_get_application_target_sdk_version() < 23) {
+//        soname_ = basename(realpath_.c_str());
+//        DL_WARN_documented_change(23,
+//                                  "missing-soname-enforced-for-api-level-23",
+//                                  "\"%s\" has no DT_SONAME (will use %s instead)",
+//                                  get_realpath(), soname_);
+//
+//        // Don't call add_dlwarning because a missing DT_SONAME isn't important enough to show in the UI
+//    }
+
+    // Validate each library's verdef section once, so we don't have to validate
+    // it each time we look up a symbol with a version.
+//    if (!validate_verdef_section(this)) return false;
+
+    flags_ |= FLAG_PRELINKED;
+    return true;
 }
+
+
+
 
 
 
@@ -539,3 +613,46 @@ const char *soinfo::get_soname() const {
 #endif
 
 }
+
+void soinfo::set_dt_runpath(const char* path) {
+    if (!has_min_version(3)) {
+        return;
+    }
+
+    std::vector<std::string> runpaths;
+
+    split_path(path, ":", &runpaths);
+
+    std::string origin = dirname(get_realpath());
+    // FIXME: add $PLATFORM.
+    std::vector<std::pair<std::string, std::string>> params = {
+            {"ORIGIN", origin},
+            {"LIB", kLibPath},
+    };
+    for (auto&& s : runpaths) {
+        format_string(&s, params);
+    }
+
+    resolve_paths(runpaths, &dt_runpath_);
+}
+
+void soinfo::set_soname(const char* soname) {
+#if defined(__work_around_b_24465209__)
+    if (has_min_version(2)) {
+    soname_ = soname;
+  }
+  strlcpy(old_name_, soname_, sizeof(old_name_));
+#else
+    soname_ = soname;
+#endif
+}
+
+const char* soinfo::get_string(ElfW(Word) index) const {
+    if (has_min_version(1) && (index >= strtab_size_)) {
+        LOGE("%s: strtab out of bounds error; STRSZ=%zd, name=%d",
+                         get_realpath(), strtab_size_, index);
+    }
+
+    return strtab_ + index;
+}
+
