@@ -76,3 +76,31 @@ Java_com_hepta_hideapk_MainActivity_hideApk(JNIEnv *env, jobject thiz, jstring s
 
     return;
 }
+
+struct android_namespace_user_t{
+
+
+    int a;
+private:
+    bool is_isolated_;
+    bool is_greylist_enabled_;
+    bool is_also_used_as_anonymous_;
+};
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_soglobal(JNIEnv *env, jobject thiz, jstring source_dir) {
+    // TODO: implement soglobal()
+
+    std::string pkgName = const_cast<char *>(env->GetStringUTFChars(source_dir, 0));
+    pkgName=pkgName+"!/lib/arm64-v8a/libnativeloader.so";
+    void * handle = dlopen(pkgName.c_str(),RTLD_NOW);
+    android_namespace_user_t **bbs1  = static_cast<android_namespace_user_t **>(dlsym(handle, "bbs"));
+    int (*user_print)(void*)  = reinterpret_cast<int (*)(void *)>(dlsym(handle,"_ZN24android_namespace_user_t10user_printEv"));
+
+    android_namespace_user_t *bbs = static_cast<android_namespace_user_t *>(*bbs1);
+    LOGE("%d",bbs->a);
+    int text = user_print(bbs);
+    LOGE("%d",text);
+}

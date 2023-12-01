@@ -3,37 +3,38 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.18.1)
 
 # Declares and names the project.
-
-project("hideapk")
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_subdirectory(nativeloader)
+# 设置目标导入路径，这里是一行
 
 
+#if (${RXDEBUG} STREQUAL OFF)
+#    message("this is RXDEBUG OFF")
+#else()
+#    message("this is RXDEBUG ON")
+#endif()
+
+
+
+
+#include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_library( # Sets the name of the library.
-        hideapk
-
+        nativeloader
         # Sets the library as a shared library.
         SHARED
-
         # Provides a relative path to your source file(s).
-        elf_symbol_resolver.cpp
-        miniz.c
-        linker.cpp
-        linker_soinfo.cpp
-        linker_phdr.cpp
-        linker_mapped_file_fragment.cpp
-        linker_utils.cpp
-        linker_debug.cpp
-        native-lib.cpp)
+        nativeload.cpp
+        )
+
+
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -46,15 +47,14 @@ find_library( # Sets the name of the path variable.
 
         # Specifies the name of the NDK library that
         # you want CMake to locate.
-        log)
+        log )
+
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-        hideapk
+        nativeloader
 
-        # Links the target library to the log library
-        # included in the NDK.
-        ${log-lib})
+        ${log-lib} )

@@ -66,10 +66,13 @@ public class MainActivity extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                hideApk("com.hepta.adirf");
+                ApplicationInfo applicationInfo = getApplication().getApplicationInfo();
+                soglobal(applicationInfo.sourceDir);
             }
         });
     }
+
+    private native void soglobal(String sourceDir) ;
 
     private native void hideApk(String s);
 
