@@ -60,6 +60,7 @@ struct ApkNativeInfo {
     int fd;
 };
 void* LoadNativeSoByMem(uint8_t * soArrayMem,int length);
+
 uint8_t * Creatememfd(int fd, int size);
 bool LoadApkModule(char * apkSource);
 struct address_space_params {
