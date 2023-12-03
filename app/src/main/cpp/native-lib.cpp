@@ -104,3 +104,11 @@ Java_com_hepta_hideapk_MainActivity_soglobal(JNIEnv *env, jobject thiz, jstring 
     int text = user_print(bbs);
     LOGE("%d",text);
 }
+
+
+
+
+__attribute__((constructor)) static void beforeFunction()
+{
+    LOGE("beforeFunction\n");
+}

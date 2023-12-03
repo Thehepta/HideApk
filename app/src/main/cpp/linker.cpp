@@ -16,6 +16,7 @@
 #include "linker_debug.h"
 #include <sys/syscall.h>
 #include <sys/utsname.h>
+#include<unordered_map>
 
 
 static inline uintptr_t untag_address(uintptr_t p) {
@@ -100,10 +101,7 @@ soinfo* soinfo_alloc(ApkNativeInfo &apkNativeInfo){
 
     soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) resolve_elf_internal_symbol(get_android_linker_path(),"__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
     void* g_default_namespace = static_cast<void *>(resolve_elf_internal_symbol(get_android_linker_path(), "__dl_g_default_namespace"));
-//    struct stat file_stat;
-//    Dl_info info;
-//    void* addr = (void*)soinfo_alloc; // 你要查询的地址，这里以main函数的地址为例
-//    soinfo * local_si = find_containing_library(addr);
+
     soinfo* si = soinf_alloc_fun(static_cast<android_namespace_t *>(g_default_namespace), apkNativeInfo.libname.c_str(), nullptr, 0, RTLD_GLOBAL);
     return si;
 }
@@ -117,10 +115,15 @@ void* LoadNativeSoByMem(ApkNativeInfo &apkNativeInfo){
         LOGE("elf_reader Read failed");
         return nullptr;
     }
+
+
+
     address_space_params  default_params;
     elf_reader->Load(&default_params);
     linker_protect();
     soinfo * si_ = soinfo_alloc(apkNativeInfo);
+
+
     si_->base = elf_reader->load_start();
     si_->size = elf_reader->load_size();
     si_->set_mapped_by_caller(elf_reader->is_mapped_by_caller());
@@ -230,6 +233,95 @@ bool LoadApkModule(char * apkSource){
 
 
 }
+
+class LoadTask {
+public:
+
+    static LoadTask* create(const char* name,
+                            soinfo* needed_by,
+                            android_namespace_t* start_from,
+                            std::unordered_map<const soinfo*, ElfReader>* readers_map) {
+        return new  LoadTask(name, needed_by, start_from, readers_map);
+    }
+
+private:
+    LoadTask(const char* name,
+             soinfo* needed_by,
+             android_namespace_t* start_from,
+             std::unordered_map<const soinfo*, ElfReader>* readers_map)
+            : name_(name), needed_by_(needed_by), si_(nullptr),
+              fd_(-1), close_fd_(false), file_offset_(0), elf_readers_map_(readers_map),
+              is_dt_needed_(false), start_from_(start_from) {}
+
+    ~LoadTask() {
+        if (fd_ != -1 && close_fd_) {
+            close(fd_);
+        }
+    }
+
+    const char* name_;
+    soinfo* needed_by_;
+    soinfo* si_;
+    const android_dlextinfo* extinfo_;
+    int fd_;
+    bool close_fd_;
+    off64_t file_offset_;
+    std::unordered_map<const soinfo*, ElfReader>* elf_readers_map_;
+    // TODO(dimitry): needed by workaround for http://b/26394120 (the grey-list)
+    bool is_dt_needed_;
+    // END OF WORKAROUND
+    const android_namespace_t* const start_from_;
+
+    DISALLOW_IMPLICIT_CONSTRUCTORS(LoadTask);
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
