@@ -113,16 +113,9 @@ public:
     bool read() {
         //    task->add_elf_readers_map()
 
-        ElfReader elf_reader ;
-        if(elf_reader.Read("", fd_, file_offset_, file_size_)){
-            soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
-            if (si == nullptr) {
-                return false;
-            }
-            set_soinfo(si);
-            add_elf_readers_map(si,elf_reader);
-        }
-        return true;
+        ElfReader &elf_reader = get_elf_reader();
+        return elf_reader.Read("", fd_, file_offset_, file_size_);
+
     }
 
 
@@ -162,6 +155,22 @@ public:
         if (fd_ != -1 && close_fd_) {
             close(fd_);
         }
+    }
+
+    bool load(address_space_params* address_space) {
+        ElfReader& elf_reader = get_elf_reader();
+        if (!elf_reader.Load(address_space)) {
+            return false;
+        }
+
+        si_->base = elf_reader.load_start();
+        si_->size = elf_reader.load_size();
+        si_->set_mapped_by_caller(elf_reader.is_mapped_by_caller());
+        si_->load_bias = elf_reader.load_bias();
+        si_->phnum = elf_reader.phdr_count();
+        si_->phdr = elf_reader.loaded_phdr();
+
+        return true;
     }
 
 private:
@@ -398,6 +407,8 @@ bool LoadApkModule(char * apkSource){
 //    return true;
 
 
+    std::unordered_map<const soinfo*, ElfReader> readers_map;
+    LoadTaskList load_tasks;
 
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
@@ -417,47 +428,29 @@ bool LoadApkModule(char * apkSource){
             return false;
         }
         if(strstr(file_stat.m_filename,APK_NATIVE_LIB)!= NULL) {
-            ApkNativeInfo apkNativeInfo;
-            apkNativeInfo.file_stat = file_stat;
-            apkNativeInfo.somem_addr = Creatememfd(&apkNativeInfo.fd, file_stat.m_uncomp_size);
+            int fd;
+            uint8_t * somem_addr = Creatememfd(&fd, file_stat.m_uncomp_size);
 
-            if (!apkNativeInfo.somem_addr) {
+            if (!somem_addr) {
                 printf("Failed to allocate memory.\n");
                 mz_zip_reader_end(&zip_archive);
                 return false;
             }
-            if (!mz_zip_reader_extract_to_mem(&zip_archive, i, apkNativeInfo.somem_addr, file_stat.m_uncomp_size, 0)) {
+            if (!mz_zip_reader_extract_to_mem(&zip_archive, i, somem_addr, file_stat.m_uncomp_size, 0)) {
                 printf("Failed to extract file.\n");
                 mz_zip_reader_end(&zip_archive);
                 return false;
             }
-            vec_apkNativeInfo.push_back(apkNativeInfo);
+
+            LoadTask* task =  LoadTask::create(file_stat.m_filename, nullptr,g_default_namespace, &readers_map);
+            task->set_fd(fd, false);
+            task->set_file_offset(0);
+            task->set_file_size(file_stat.m_uncomp_size);
+            load_tasks.push_back(task);
 //            printf("Filename: \"%s\", Comment: \"%s\", Uncompressed size: %llu\n",file_stat.m_filename, file_stat.m_comment ? file_stat.m_comment : "",(mz_uint64) file_stat.m_uncomp_size);
         }
     }
     mz_zip_reader_end(&zip_archive);
-//    std::sort(vec_apkNativeInfo.begin(), vec_apkNativeInfo.end(), compareSoDependency);
-
-
-
-
-
-    std::unordered_map<const soinfo*, ElfReader> readers_map;
-    LoadTaskList load_tasks;
-
-    struct stat file_stat;
-//    file_stat.st_size
-
-    for (ApkNativeInfo curNativeInfo : vec_apkNativeInfo) {
-//        LoadNativeSoByMem(curNativeInfo);
-        LoadTask* task =  LoadTask::create(curNativeInfo.libname.c_str(), nullptr,g_default_namespace, &readers_map);
-        task->set_fd(curNativeInfo.fd, false);
-        task->set_file_offset(0);
-        task->set_file_size(curNativeInfo.file_stat.m_uncomp_size);
-        load_tasks.push_back(task);
-
-    }
-
 
 
     linker_protect();
@@ -467,10 +460,17 @@ bool LoadApkModule(char * apkSource){
 
         LoadTask* task = load_tasks[i];
 
-        if (!task->read()) {
+        soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+        if (si == nullptr) {
             return false;
         }
-        soinfo * si = task->get_soinfo();
+        task->set_soinfo(si);
+
+        if (!task->read()) {
+//            soinfo_free(si);
+            task->set_soinfo(nullptr);
+            return false;
+        }
         const ElfReader& elf_reader = task->get_elf_reader();
         for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
             if (d->d_tag == DT_RUNPATH) {
@@ -486,12 +486,10 @@ bool LoadApkModule(char * apkSource){
 //            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
         });
     }
-
-
-//    for (auto&& task : load_list) {
-//
-//
-//    }
+    address_space_params  default_params;
+    for (auto&& task : load_tasks) {
+        task->load(&default_params);
+    }
 
 
     linker_unprotect();
