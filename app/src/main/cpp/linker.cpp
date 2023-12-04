@@ -459,7 +459,6 @@ bool LoadApkModule(char * apkSource){
     for (size_t i = 0; i<load_tasks.size(); ++i) {
 
         LoadTask* task = load_tasks[i];
-
         soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
         if (si == nullptr) {
             return false;
@@ -480,12 +479,14 @@ bool LoadApkModule(char * apkSource){
                 si->set_soname(elf_reader.get_string(d->d_un.d_val));
             }
         }
-
-        for_each_dt_needed(task->get_elf_reader(), [&](const char* name) {
-            LOGE("NEED name: %s",name);
-//            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
-        });
     }
+
+//    for_each_dt_needed(task->get_elf_reader(), [&](const char* name) {
+//        LOGE("NEED name: %s",name);
+////            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
+//    });
+
+
     address_space_params  default_params;
     for (auto&& task : load_tasks) {
         task->load(&default_params);
