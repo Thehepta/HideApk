@@ -656,3 +656,19 @@ const char* soinfo::get_string(ElfW(Word) index) const {
     return strtab_ + index;
 }
 
+void soinfo::link_image() {
+
+    if (!relocate()) {
+    }
+
+
+
+}
+
+bool soinfo::relocate() {
+
+
+
+    return false;
+}
+

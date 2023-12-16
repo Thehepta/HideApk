@@ -73,6 +73,9 @@ struct soinfo {
     private:
   char old_name_[SOINFO_NAME_LEN];
 #endif
+
+    void link_image();
+
 public:
     const ElfW(Phdr)* phdr;
     size_t phnum;
@@ -336,4 +339,5 @@ private:
     // version >= 5
 //    std::unique_ptr<soinfo_tls> tls_;
 //    std::vector<TlsDynamicResolverArg> tlsdesc_args_;
+    bool relocate();
 };
