@@ -271,7 +271,7 @@ private:
     ElfW(Sym)* elf_addr_lookup(const void* addr);
 
 //public:
-//    bool lookup_version_info(const VersionTracker& version_tracker, ElfW(Word) sym,
+//    bool lookup_version_info(const linker_version& version_tracker, ElfW(Word) sym,
 //                             const char* sym_name, const version_info** vi);
 //
 //private:

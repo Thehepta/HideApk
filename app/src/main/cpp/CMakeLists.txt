@@ -33,6 +33,8 @@ add_library( # Sets the name of the library.
         linker_mapped_file_fragment.cpp
         linker_utils.cpp
         linker_debug.cpp
+        linker_version.cpp
+        linker_symbol.cpp
         native-lib.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a

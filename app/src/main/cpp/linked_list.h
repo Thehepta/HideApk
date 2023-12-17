@@ -15,10 +15,22 @@ struct LinkedListEntry {
 template<typename T, typename Allocator>
 class LinkedList {
 
-    struct LinkedListHeader {
-        LinkedListEntry<T>* head;
-        LinkedListEntry<T>* tail;
-    };
-    LinkedListHeader* header_;
-    DISALLOW_COPY_AND_ASSIGN(LinkedList);
+public:
+    template<typename F>
+    T* find_if(F predicate) const {
+        for (LinkedListEntry<T>* e = head_; e != nullptr; e = e->next) {
+            if (predicate(e->element)) {
+                return e->element;
+            }
+        }
+
+        return nullptr;
+    }
+
+private:
+    LinkedListEntry<T>* head_;
+    LinkedListEntry<T>* tail_;
 };
+
+
+

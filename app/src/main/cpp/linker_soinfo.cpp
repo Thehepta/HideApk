@@ -5,6 +5,7 @@
 #include "linker_debug.h"
 #include "linker_phdr.h"
 #include "linker_utils.h"
+#include "linker_version.h"
 
 
 int g_argc = 0;
@@ -667,8 +668,71 @@ void soinfo::link_image() {
 
 bool soinfo::relocate() {
 
+    VersionTracker version_tracker;
+    if (!version_tracker.init(this)) {
+        return false;
+    }
 
+
+//    Relocator relocator(version_tracker, lookup_list);
+//    relocator.si = this;
+//    relocator.si_strtab = strtab_;
+//    relocator.si_strtab_size = has_min_version(1) ? strtab_size_ : SIZE_MAX;
+//    relocator.si_symtab = symtab_;
+//    relocator.tlsdesc_args = &tlsdesc_args_;
+//    relocator.tls_tp_base = __libc_shared_globals()->static_tls_layout.offset_thread_pointer();
+//
 
     return false;
+}
+
+static soinfo_list_t g_empty_list;
+
+soinfo_list_t& soinfo::get_children() {
+    if (has_min_version(0)) {
+        return children_;
+    }
+
+    return g_empty_list;
+}
+
+const soinfo_list_t& soinfo::get_children() const {
+    if (has_min_version(0)) {
+        return children_;
+    }
+
+    return g_empty_list;
+}
+
+ElfW(Addr) soinfo::get_verneed_ptr() const {
+    if (has_min_version(2)) {
+        return verneed_ptr_;
+    }
+
+    return 0;
+}
+
+size_t soinfo::get_verneed_cnt() const {
+    if (has_min_version(2)) {
+        return verneed_cnt_;
+    }
+
+    return 0;
+}
+
+ElfW(Addr) soinfo::get_verdef_ptr() const {
+    if (has_min_version(2)) {
+        return verdef_ptr_;
+    }
+
+    return 0;
+}
+
+size_t soinfo::get_verdef_cnt() const {
+    if (has_min_version(2)) {
+        return verdef_cnt_;
+    }
+
+    return 0;
 }
 
