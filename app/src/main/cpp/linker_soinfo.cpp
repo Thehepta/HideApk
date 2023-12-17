@@ -6,7 +6,7 @@
 #include "linker_phdr.h"
 #include "linker_utils.h"
 #include "linker_version.h"
-
+#include "linker_relocate.h"
 
 int g_argc = 0;
 char** g_argv = nullptr;
@@ -17,9 +17,6 @@ static constexpr const char* kLibPath = "lib64";
 #else
 static constexpr const char* kLibPath = "lib";
 #endif
-
-
-
 
 
 bool soinfo::prelink_image() {
@@ -659,14 +656,18 @@ const char* soinfo::get_string(ElfW(Word) index) const {
 
 void soinfo::link_image() {
 
-    if (!relocate()) {
-    }
+//    if (!relocate()) {
+//    }
 
 
 
 }
 
-bool soinfo::relocate() {
+
+
+
+
+bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
     VersionTracker version_tracker;
     if (!version_tracker.init(this)) {
@@ -674,14 +675,44 @@ bool soinfo::relocate() {
     }
 
 
-//    Relocator relocator(version_tracker, lookup_list);
-//    relocator.si = this;
-//    relocator.si_strtab = strtab_;
-//    relocator.si_strtab_size = has_min_version(1) ? strtab_size_ : SIZE_MAX;
-//    relocator.si_symtab = symtab_;
+    Relocator relocator(version_tracker, lookup_list);
+    relocator.si = this;
+    relocator.si_strtab = strtab_;
+    relocator.si_strtab_size = has_min_version(1) ? strtab_size_ : SIZE_MAX;
+    relocator.si_symtab = symtab_;
 //    relocator.tlsdesc_args = &tlsdesc_args_;
 //    relocator.tls_tp_base = __libc_shared_globals()->static_tls_layout.offset_thread_pointer();
-//
+
+    if (android_relocs_ != nullptr) {
+        // check signature
+        if (android_relocs_size_ > 3 &&
+            android_relocs_[0] == 'A' &&
+            android_relocs_[1] == 'P' &&
+            android_relocs_[2] == 'S' &&
+            android_relocs_[3] == '2') {
+            DEBUG("[ android relocating %s ]", get_realpath());
+
+            const uint8_t* packed_relocs = android_relocs_ + 4;
+            const size_t packed_relocs_size = android_relocs_size_ - 4;
+
+            if (!packed_relocate<RelocMode::Typical>(relocator, sleb128_decoder(packed_relocs, packed_relocs_size))) {
+                return false;
+            }
+        } else {
+            DL_ERR("bad android relocation header.");
+            return false;
+        }
+    }
+
+    if (relr_ != nullptr) {
+        DEBUG("[ relocating %s relr ]", get_realpath());
+        if (!relocate_relr()) {
+            return false;
+        }
+    }
+
+
+
 
     return false;
 }
@@ -736,3 +767,49 @@ size_t soinfo::get_verdef_cnt() const {
     return 0;
 }
 
+SymbolLookupLib soinfo::get_lookup_lib() {
+    SymbolLookupLib result {};
+    result.si_ = this;
+
+    // For libs that only have SysV hashes, leave the gnu_bloom_filter_ field NULL to signal that
+    // the fallback code path is needed.
+    if (!is_gnu_hash()) {
+        return result;
+    }
+
+    result.gnu_maskwords_ = gnu_maskwords_;
+    result.gnu_shift2_ = gnu_shift2_;
+    result.gnu_bloom_filter_ = gnu_bloom_filter_;
+
+    result.strtab_ = strtab_;
+    result.strtab_size_ = strtab_size_;
+    result.symtab_ = symtab_;
+    result.versym_ = get_versym_table();
+
+    result.gnu_chain_ = gnu_chain_;
+    result.gnu_nbucket_ = gnu_nbucket_;
+    result.gnu_bucket_ = gnu_bucket_;
+
+    return result;
+}
+
+bool soinfo::lookup_version_info(const VersionTracker& version_tracker, ElfW(Word) sym,
+                                 const char* sym_name, const version_info** vi) {
+    const ElfW(Versym)* sym_ver_ptr = get_versym(sym);
+    ElfW(Versym) sym_ver = sym_ver_ptr == nullptr ? 0 : *sym_ver_ptr;
+
+    if (sym_ver != VER_NDX_LOCAL && sym_ver != VER_NDX_GLOBAL) {
+        *vi = static_cast<const version_info *>(version_tracker.get_version_info(sym_ver));
+
+        if (*vi == nullptr) {
+            DL_ERR("cannot find verneed/verdef for version index=%d "
+                   "referenced by symbol \"%s\" at \"%s\"", sym_ver, sym_name, get_realpath());
+            return false;
+        }
+    } else {
+        // there is no version info
+        *vi = nullptr;
+    }
+
+    return true;
+}

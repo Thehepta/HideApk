@@ -5,7 +5,13 @@
 #pragma one
 
 
-#include "linker_soinfo.h"
+#include <elf.h>
+#include <link.h>
+#include <vector>
+#include <string>
+#include "linker_common_types.h"
+
+class soinfo;
 
 struct SymbolLookupLib {
     uint32_t gnu_maskwords_ = 0;
@@ -25,3 +31,27 @@ struct SymbolLookupLib {
 
     bool needs_sysv_lookup() const { return si_ != nullptr && gnu_bloom_filter_ == nullptr; }
 };
+
+
+// A list of libraries to search for a symbol.
+class SymbolLookupList {
+    std::vector<SymbolLookupLib> libs_;
+    SymbolLookupLib sole_lib_;
+    const SymbolLookupLib* begin_;
+    const SymbolLookupLib* end_;
+    size_t slow_path_count_ = 0;
+
+public:
+    explicit SymbolLookupList(soinfo* si);
+    SymbolLookupList(const soinfo_list_t& global_group, const soinfo_list_t& local_group);
+    void set_dt_symbolic_lib(soinfo* symbolic_lib);
+
+    const SymbolLookupLib* begin() const { return begin_; }
+    const SymbolLookupLib* end() const { return end_; }
+    bool needs_slow_path() const { return slow_path_count_ > 0; }
+};
+
+
+
+
+

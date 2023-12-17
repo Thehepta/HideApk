@@ -3,11 +3,9 @@
 //
 
 #pragma once
-#include <elf.h>
-#include <link.h>
-#include "vector"
-#include "string"
+#include "linker_symbol.h"
 #include "linker_namespaces.h"
+#include "linker_version.h"
 
 //android 7.12 在base下面还有一个entry,8.0以上则没有了
 
@@ -64,7 +62,15 @@ struct version_info {
 };
 
 
+ElfW(Addr) call_ifunc_resolver(ElfW(Addr) resolver_addr) {
+    if (g_is_ldd) return 0;
 
+    ElfW(Addr) ifunc_addr = __bionic_call_ifunc_resolver(resolver_addr);
+//    TRACE_TYPE(RELO, "Called ifunc_resolver@%p. The result is %p",
+//               reinterpret_cast<void *>(resolver_addr), reinterpret_cast<void*>(ifunc_addr));
+
+    return ifunc_addr;
+}
 
 
 
@@ -191,13 +197,13 @@ public:
 
     ElfW(Sym)* find_symbol_by_address(const void* addr);
 
-//    ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
-//        if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
-//            return call_ifunc_resolver(s->st_value + load_bias);
-//        }
-//
-//        return static_cast<ElfW(Addr)>(s->st_value + load_bias);
-//    }
+    ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
+        if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
+            return call_ifunc_resolver(s->st_value + load_bias);
+        }
+
+        return static_cast<ElfW(Addr)>(s->st_value + load_bias);
+    }
 
     const char* get_string(ElfW(Word) index) const;
     bool can_unload() const;
@@ -259,7 +265,7 @@ public:
     void generate_handle();
     void* to_handle();
 
-//    SymbolLookupLib get_lookup_lib();
+    SymbolLookupLib get_lookup_lib();
 
 private:
     bool is_image_linked() const;
@@ -270,12 +276,12 @@ private:
     ElfW(Sym)* gnu_addr_lookup(const void* addr);
     ElfW(Sym)* elf_addr_lookup(const void* addr);
 
-//public:
-//    bool lookup_version_info(const linker_version& version_tracker, ElfW(Word) sym,
-//                             const char* sym_name, const version_info** vi);
-//
-//private:
-//    bool relocate(const SymbolLookupList& lookup_list);
+public:
+    bool lookup_version_info(const VersionTracker& version_tracker, ElfW(Word) sym,
+                             const char* sym_name, const version_info** vi);
+
+private:
+    bool relocate(const SymbolLookupList& lookup_list);
     bool relocate_relr();
     void apply_relr_reloc(ElfW(Addr) offset);
 
@@ -339,5 +345,4 @@ private:
     // version >= 5
 //    std::unique_ptr<soinfo_tls> tls_;
 //    std::vector<TlsDynamicResolverArg> tlsdesc_args_;
-    bool relocate();
 };

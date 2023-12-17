@@ -35,6 +35,7 @@ add_library( # Sets the name of the library.
         linker_debug.cpp
         linker_version.cpp
         linker_symbol.cpp
+        linker_relocate.cpp
         native-lib.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
