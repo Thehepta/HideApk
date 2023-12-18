@@ -4,8 +4,8 @@
 
 #pragma once
 
-
 #include "linker_soinfo.h"
+
 
 class VersionTracker {
 
@@ -24,4 +24,7 @@ private:
 
     DISALLOW_COPY_AND_ASSIGN(VersionTracker);
 };
+
+
+
 

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "linker_version.h"
 #include "linker_reloc_iterators.h"
-
+#include "linker_soinfo.h"
+//#include "linker_gnu_hash.h"
 
 
 enum RelocationKind {
@@ -75,8 +75,6 @@ enum RelocationKind {
 #define R_GENERIC_TLSDESC       R_X86_64_TLSDESC
 
 #endif
-
-
 
 
 
@@ -165,10 +163,10 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
                 continue;
             }
 
-            if (IsGeneral) {
-                TRACE_TYPE(LOOKUP, "SEARCH %s in %s@%p (gnu)",
-                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
-            }
+//            if (IsGeneral) {
+//                TRACE_TYPE(LOOKUP, "SEARCH %s in %s@%p (gnu)",
+//                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
+//            }
 
             const uint32_t word_num = (hash / kBloomMaskBits) & lib->gnu_maskwords_;
             const ElfW(Addr) bloom_word = lib->gnu_bloom_filter_[word_num];
@@ -182,10 +180,10 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
                 }
             }
 
-            if (IsGeneral) {
-                TRACE_TYPE(LOOKUP, "NOT FOUND %s in %s@%p",
-                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
-            }
+//            if (IsGeneral) {
+//                TRACE_TYPE(LOOKUP, "NOT FOUND %s in %s@%p",
+//                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
+//            }
         }
 
         // Search the library's hash table chain.
@@ -208,21 +206,21 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
                     memcmp(lib->strtab_ + sym->st_name, name, name_len + 1) == 0 &&
                     is_symbol_global_and_defined(lib->si_, sym)) {
                     *si_found_in = lib->si_;
-                    if (IsGeneral) {
-                        TRACE_TYPE(LOOKUP, "FOUND %s in %s (%p) %zd",
-                                   name, lib->si_->get_realpath(), reinterpret_cast<void*>(sym->st_value),
-                                   static_cast<size_t>(sym->st_size));
-                    }
+//                    if (IsGeneral) {
+//                        TRACE_TYPE(LOOKUP, "FOUND %s in %s (%p) %zd",
+//                                   name, lib->si_->get_realpath(), reinterpret_cast<void*>(sym->st_value),
+//                                   static_cast<size_t>(sym->st_size));
+//                    }
                     return sym;
                 }
             }
             ++sym_idx;
         } while ((chain_value & 1) == 0);
 
-        if (IsGeneral) {
-            TRACE_TYPE(LOOKUP, "NOT FOUND %s in %s@%p",
-                       name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
-        }
+//        if (IsGeneral) {
+//            TRACE_TYPE(LOOKUP, "NOT FOUND %s in %s@%p",
+//                       name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
+//        }
     }
 }
 
@@ -307,6 +305,7 @@ template <bool Enabled> void count_relocation_if(RelocationKind kind) {
     if (Enabled) count_relocation(kind);
 }
 
+static bool process_relocation_general(Relocator& relocator, const rel_t& reloc);
 
 
 template <RelocMode Mode>
@@ -435,8 +434,7 @@ static bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
         if (r_type == R_GENERIC_JUMP_SLOT) {
             count_relocation_if<IsGeneral>(kRelocAbsolute);
             const ElfW(Addr) result = sym_addr + get_addend_norel();
-            LOGE("RELO JMP_SLOT %16p <- %16p %s",
-                        rel_target, reinterpret_cast<void*>(result), sym_name);
+            LOGE("RELO JMP_SLOT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         }
@@ -487,16 +485,16 @@ static bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             // In the linker, ifuncs are called as soon as possible so that string functions work. We must
             // not call them again. (e.g. On arm32, resolving an ifunc changes the meaning of the addend
             // from a resolver function to the implementation.)
-            if (!relocator.si->is_linker()) {
-                count_relocation_if<IsGeneral>(kRelocRelative);
-                const ElfW(Addr) ifunc_addr = relocator.si->load_bias + get_addend_rel();
-                LOGE("RELO IRELATIVE %16p <- %16p",
-                            rel_target, reinterpret_cast<void*>(ifunc_addr));
-                if (handle_text_relocs && !protect_segments()) return false;
-                const ElfW(Addr) result = call_ifunc_resolver(ifunc_addr);
-                if (handle_text_relocs && !unprotect_segments()) return false;
-                *static_cast<ElfW(Addr)*>(rel_target) = result;
-            }
+//            if (!relocator.si->is_linker()) {
+//                count_relocation_if<IsGeneral>(kRelocRelative);
+//                const ElfW(Addr) ifunc_addr = relocator.si->load_bias + get_addend_rel();
+//                LOGE("RELO IRELATIVE %16p <- %16p",
+//                            rel_target, reinterpret_cast<void*>(ifunc_addr));
+//                if (handle_text_relocs && !protect_segments()) return false;
+//                const ElfW(Addr) result = call_ifunc_resolver(ifunc_addr);
+//                if (handle_text_relocs && !unprotect_segments()) return false;
+//                *static_cast<ElfW(Addr)*>(rel_target) = result;
+//            }
             break;
         case R_GENERIC_COPY:
             // Copy relocations allow read-only data or code in a non-PIE executable to access a

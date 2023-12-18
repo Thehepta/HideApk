@@ -30,6 +30,7 @@
 
 #include "linker.h"
 #include "linker_sleb128.h"
+#include "user_system.h"
 
 const size_t RELOCATION_GROUPED_BY_INFO_FLAG = 1;
 const size_t RELOCATION_GROUPED_BY_OFFSET_DELTA_FLAG = 2;
@@ -77,7 +78,7 @@ inline bool for_all_packed_relocs(sleb128_decoder decoder, F&& callback) {
 #else
         if (__predict_false(group_flags & RELOCATION_GROUP_HAS_ADDEND_FLAG)) {
             // This platform does not support rela, and yet we have it encoded in android_rel section.
-            async_safe_fatal("unexpected r_addend in android.rel section");
+//            LOGE("unexpected r_addend in android.rel section");
         }
 #endif
 

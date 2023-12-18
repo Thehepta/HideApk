@@ -5,8 +5,7 @@
 #pragma once
 #include "linker_symbol.h"
 #include "linker_namespaces.h"
-#include "linker_version.h"
-
+#include "linker_debug.h"
 //android 7.12 在base下面还有一个entry,8.0以上则没有了
 
 typedef void (*linker_dtor_function_t)();
@@ -62,15 +61,7 @@ struct version_info {
 };
 
 
-ElfW(Addr) call_ifunc_resolver(ElfW(Addr) resolver_addr) {
-    if (g_is_ldd) return 0;
-
-    ElfW(Addr) ifunc_addr = __bionic_call_ifunc_resolver(resolver_addr);
-//    TRACE_TYPE(RELO, "Called ifunc_resolver@%p. The result is %p",
-//               reinterpret_cast<void *>(resolver_addr), reinterpret_cast<void*>(ifunc_addr));
-
-    return ifunc_addr;
-}
+class VersionTracker;
 
 
 
@@ -199,7 +190,8 @@ public:
 
     ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
         if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
-            return call_ifunc_resolver(s->st_value + load_bias);
+//            return call_ifunc_resolver(s->st_value + load_bias);
+            return NULL;
         }
 
         return static_cast<ElfW(Addr)>(s->st_value + load_bias);

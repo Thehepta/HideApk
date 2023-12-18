@@ -22,7 +22,7 @@ public:
 
         do {
             if (current_ >= end_) {
-                LOGE("sleb128_decoder ran out of bounds");
+//                LOGE("sleb128_decoder ran out of bounds");
             }
             byte = *current_++;
             value |= (static_cast<size_t>(byte & 127) << shift);

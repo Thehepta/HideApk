@@ -3,8 +3,9 @@
 //
 
 #include "linker_version.h"
-#include "linker_debug.h"
 
+
+class soinfo;
 
 
 template <typename F>
@@ -54,8 +55,6 @@ static bool for_each_verdef(const soinfo* si, F functor) {
 
     return true;
 }
-
-
 
 
 
