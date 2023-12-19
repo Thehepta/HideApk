@@ -276,9 +276,9 @@ static bool needs_slow_relocate_loop(const Relocator& relocator __unused) {
 //    // TODO: This could become a run-time flag.
 //  return true;
 //#endif
-//#if !defined(__LP64__)
-//    if (relocator.si->has_text_relocations) return true;
-//#endif
+#if !defined(__LP64__)
+    if (relocator.si->has_text_relocations) return true;
+#endif
 //    if (g_ld_debug_verbosity > LINKER_VERBOSITY_TRACE) {
 //        // If linker TRACE() is enabled, then each relocation is logged.
 //        return true;

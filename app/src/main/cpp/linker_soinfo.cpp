@@ -712,10 +712,47 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
     }
 
 
+#if defined(USE_RELA)
+    if (rela_ != nullptr) {
+        DEBUG("[ relocating %s rela ]", get_realpath());
 
+        if (!plain_relocate<RelocMode::Typical>(relocator, rela_, rela_count_)) {
+            return false;
+        }
+    }
+    if (plt_rela_ != nullptr) {
+        DEBUG("[ relocating %s plt rela ]", get_realpath());
+        if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rela_, plt_rela_count_)) {
+            return false;
+        }
+    }
+#else
+    if (rel_ != nullptr) {
+    DEBUG("[ relocating %s rel ]", get_realpath());
+    if (!plain_relocate<RelocMode::Typical>(relocator, rel_, rel_count_)) {
+      return false;
+    }
+  }
+  if (plt_rel_ != nullptr) {
+    DEBUG("[ relocating %s plt rel ]", get_realpath());
+    if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rel_, plt_rel_count_)) {
+      return false;
+    }
+  }
+#endif
 
-    return false;
-}
+    // Once the tlsdesc_args_ vector's size is finalized, we can write the addresses of its elements
+    // into the TLSDESC relocations.
+#if defined(__aarch64__)
+    // Bionic currently only implements TLSDESC for arm64.
+//    for (const std::pair<TlsDescriptor*, size_t>& pair : relocator.deferred_tlsdesc_relocs) {
+//        TlsDescriptor* desc = pair.first;
+//        desc->func = tlsdesc_resolver_dynamic;
+//        desc->arg = reinterpret_cast<size_t>(&tlsdesc_args_[pair.second]);
+    }
+#endif
+
+    return true;}
 
 static soinfo_list_t g_empty_list;
 
