@@ -27,10 +27,9 @@
  */
 
 #pragma once
-
-#include "linker.h"
 #include "linker_sleb128.h"
 #include "user_system.h"
+#include <link.h>
 
 const size_t RELOCATION_GROUPED_BY_INFO_FLAG = 1;
 const size_t RELOCATION_GROUPED_BY_OFFSET_DELTA_FLAG = 2;

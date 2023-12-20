@@ -1,6 +1,7 @@
 //
 // Created by chic on 2023/11/27.
 //
+#include <dlfcn.h>
 #include "linker_soinfo.h"
 #include "linker_debug.h"
 #include "linker_phdr.h"
@@ -663,7 +664,10 @@ void soinfo::link_image(SymbolLookupList& lookup_list) {
 
 }
 
-
+bool soinfo::is_linked() const {
+//    return (flags_ & FLAG_LINKED) != 0;
+    return  0;
+}
 
 
 

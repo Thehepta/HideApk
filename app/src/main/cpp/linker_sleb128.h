@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include <stdint.h>
+#include <limits.h>
 
 
 // Helper classes for decoding LEB128, used in packed relocation data.

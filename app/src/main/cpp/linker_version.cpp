@@ -5,7 +5,7 @@
 #include "linker_version.h"
 
 
-class soinfo;
+struct soinfo;
 
 
 template <typename F>

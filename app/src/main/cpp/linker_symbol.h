@@ -11,7 +11,7 @@
 #include <string>
 #include "linker_common_types.h"
 
-class soinfo;
+struct soinfo;
 
 struct SymbolLookupLib {
     uint32_t gnu_maskwords_ = 0;

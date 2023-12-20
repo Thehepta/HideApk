@@ -6,6 +6,7 @@
 #include "linker_symbol.h"
 #include "linker_namespaces.h"
 #include "linker_debug.h"
+
 //android 7.12 在base下面还有一个entry,8.0以上则没有了
 
 typedef void (*linker_dtor_function_t)();

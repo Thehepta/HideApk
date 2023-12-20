@@ -17,10 +17,10 @@
 
 
 #if defined(__LP64__)
-#define ELFW(what) ELF64_ ## what
+//#define ELFW(what) ELF64_ ## what
 #define APK_NATIVE_LIB "lib/arm64-v8a"
 #else
-#define ELFW(what) ELF32_ ## what
+//#define ELFW(what) ELF32_ ## what
 #define APK_NATIVE_LIB "lib/armeabi-v7a"
 #endif
 
