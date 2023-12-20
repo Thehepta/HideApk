@@ -71,7 +71,6 @@ struct soinfo {
   char old_name_[SOINFO_NAME_LEN];
 #endif
 
-    void link_image();
 
 public:
     const ElfW(Phdr)* phdr;
@@ -165,6 +164,7 @@ public:
     void call_destructors();
     void call_pre_init_constructors();
     bool prelink_image();
+    void link_image(SymbolLookupList& lookup_list);
 
     bool protect_relro();
 

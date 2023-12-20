@@ -5,13 +5,15 @@
 #pragma once
 
 #include <dlfcn.h>
-#include <android/dlext.h>
-#include <elf.h>
+
 #include <inttypes.h>
 #include <link.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "miniz.h"
+#include "linker_phdr.h"
+#include "linker_soinfo.h"
+#include<unordered_map>
 
 
 #if defined(__LP64__)
@@ -63,11 +65,6 @@ void* LoadNativeSoByMem(uint8_t * soArrayMem,int length);
 
 uint8_t * Creatememfd(int fd, int size);
 bool LoadApkModule(char * apkSource);
-struct address_space_params {
-    void* start_addr = nullptr;
-    size_t reserved_size = 0;
-    bool must_use_address = false;
-};
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 
@@ -104,8 +101,164 @@ constexpr size_t kLibraryAlignment = 1UL << kLibraryAlignmentBits;
 
 
 
+//const char* fix_dt_needed1(const char* dt_needed, const char* sopath __unused) {
+//#if !defined(__LP64__)
+//    int app_target_api_level = android_get_application_target_sdk_version();
+//  if (app_target_api_level < 23) {
+//    const char* bname = basename(dt_needed);
+//    if (bname != dt_needed) {
+//      DL_WARN_documented_change(23,
+//                                "invalid-dt_needed-entries-enforced-for-api-level-23",
+//                                "library \"%s\" has invalid DT_NEEDED entry \"%s\"",
+//                                sopath, dt_needed, app_target_api_level);
+////      add_dlwarning(sopath, "invalid DT_NEEDED entry",  dt_needed);
+//    }
+//
+//    return bname;
+//  }
+//#endif
+//    return dt_needed;
+//}
 
 
+template<typename F>
+static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
+    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
+        if (d->d_tag == DT_NEEDED) {
+
+//            action(fix_dt_needed(elf_reader.get_string(d->d_un.d_val), elf_reader.name()));
+        }
+    }
+}
+class ElfReader;
+
+
+class LoadTask {
+public:
+
+    static LoadTask* create(const char* name,
+                            soinfo* needed_by,
+                            android_namespace_t* start_from,
+                            std::unordered_map<const soinfo*, ElfReader>* readers_map) {
+        return new  LoadTask(name, needed_by, start_from, readers_map);
+    }
+
+
+
+
+    LoadTask(const char* name,
+             soinfo* needed_by,
+             android_namespace_t* start_from,
+             std::unordered_map<const soinfo*, ElfReader>* readers_map)
+            : name_(name), needed_by_(needed_by), si_(nullptr),
+              fd_(-1), close_fd_(false), file_offset_(0), elf_readers_map_(readers_map),
+              is_dt_needed_(false), start_from_(start_from) {}
+
+    // returns the namespace from where we need to start loading this.
+    const android_namespace_t* get_start_from() const {
+        return start_from_;
+    }
+
+    std::unordered_map<const soinfo*, ElfReader>* get_readers_map() {
+        return elf_readers_map_;
+    }
+
+    soinfo* get_soinfo() const {
+        return si_;
+    }
+
+    void set_file_offset(off64_t offset) {
+        file_offset_ = offset;
+    }
+
+    off64_t get_file_offset() const {
+        return file_offset_;
+    }
+
+    off64_t get_file_size() const {
+        return file_size_;
+    }
+    void set_file_size(off64_t offset) {
+        file_size_ = offset;
+    }
+
+    void set_soinfo(soinfo* si) {
+        si_ = si;
+    }
+
+    bool read() {
+        //    task->add_elf_readers_map()
+
+        ElfReader &elf_reader = get_elf_reader();
+        return elf_reader.Read("", fd_, file_offset_, file_size_);
+
+    }
+
+
+    bool load(address_space_params* address_space) {
+        ElfReader& elf_reader = get_elf_reader();
+        if (!elf_reader.Load(address_space)) {
+            return false;
+        }
+        si_->base = elf_reader.load_start();
+        si_->size = elf_reader.load_size();
+        si_->set_mapped_by_caller(elf_reader.is_mapped_by_caller());
+        si_->load_bias = elf_reader.load_bias();
+        si_->phnum = elf_reader.phdr_count();
+        si_->phdr = elf_reader.loaded_phdr();
+        return true;
+    }
+
+
+    void set_fd(int fd, bool assume_ownership) {
+        if (fd_ != -1 && close_fd_) {
+            close(fd_);
+        }
+        fd_ = fd;
+        close_fd_ = assume_ownership;
+    }
+
+    void add_elf_readers_map(const soinfo* si, ElfReader elfReader){
+        elf_readers_map_->emplace(si,elfReader);
+    }
+
+    ElfReader& get_elf_reader() {
+        return (*elf_readers_map_)[si_];
+    }
+
+
+    ~LoadTask() {
+        if (fd_ != -1 && close_fd_) {
+            close(fd_);
+        }
+    }
+
+
+    soinfo* get_needed_by() const {
+        return needed_by_;
+    }
+
+    void soload(std::vector<LoadTask*> &load_tasks);
+
+private:
+
+    const char* name_;
+    soinfo* needed_by_;
+    soinfo* si_;
+    const android_dlextinfo* extinfo_;
+    int fd_;
+    bool close_fd_;
+    off64_t file_offset_;
+    off64_t file_size_;
+    std::unordered_map<const soinfo*, ElfReader>* elf_readers_map_;
+    // TODO(dimitry): needed by workaround for http://b/26394120 (the grey-list)
+    bool is_dt_needed_;
+    // END OF WORKAROUND
+    const android_namespace_t* const start_from_;
+
+//    DISALLOW_IMPLICIT_CONSTRUCTORS(LoadTask);
+
+};
 
 
 

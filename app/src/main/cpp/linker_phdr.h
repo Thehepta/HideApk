@@ -6,8 +6,20 @@
 
 
 #include <string>
-#include "linker.h"
+//#include "linker.h"
+#include <elf.h>
+#include <link.h>
 #include "linker_mapped_file_fragment.h"
+
+
+struct address_space_params {
+    void* start_addr = nullptr;
+    size_t reserved_size = 0;
+    bool must_use_address = false;
+};
+
+
+
 
 class ElfReader {
 public:

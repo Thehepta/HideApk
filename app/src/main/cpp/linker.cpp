@@ -6,8 +6,7 @@
 #include <locale>
 #include <linux/ashmem.h>
 #include "linker.h"
-#include "linker_phdr.h"
-#include "linker_soinfo.h"
+
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -16,175 +15,12 @@
 #include "linker_debug.h"
 #include <sys/syscall.h>
 #include <sys/utsname.h>
-#include<unordered_map>
 
 
 
 android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(resolve_elf_internal_symbol(get_android_linker_path(), "__dl_g_default_namespace"));
 
 soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) resolve_elf_internal_symbol(get_android_linker_path(),"__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
-
-
-
-const char* fix_dt_needed(const char* dt_needed, const char* sopath __unused) {
-#if !defined(__LP64__)
-    int app_target_api_level = android_get_application_target_sdk_version();
-  if (app_target_api_level < 23) {
-    const char* bname = basename(dt_needed);
-    if (bname != dt_needed) {
-      DL_WARN_documented_change(23,
-                                "invalid-dt_needed-entries-enforced-for-api-level-23",
-                                "library \"%s\" has invalid DT_NEEDED entry \"%s\"",
-                                sopath, dt_needed, app_target_api_level);
-//      add_dlwarning(sopath, "invalid DT_NEEDED entry",  dt_needed);
-    }
-
-    return bname;
-  }
-#endif
-    return dt_needed;
-}
-
-
-template<typename F>
-static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
-    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
-        if (d->d_tag == DT_NEEDED) {
-            action(fix_dt_needed(elf_reader.get_string(d->d_un.d_val), elf_reader.name()));
-        }
-    }
-}
-
-
-
-class LoadTask {
-public:
-
-    static LoadTask* create(const char* name,
-                            soinfo* needed_by,
-                            android_namespace_t* start_from,
-                            std::unordered_map<const soinfo*, ElfReader>* readers_map) {
-        return new  LoadTask(name, needed_by, start_from, readers_map);
-    }
-
-
-
-
-    LoadTask(const char* name,
-             soinfo* needed_by,
-             android_namespace_t* start_from,
-             std::unordered_map<const soinfo*, ElfReader>* readers_map)
-            : name_(name), needed_by_(needed_by), si_(nullptr),
-              fd_(-1), close_fd_(false), file_offset_(0), elf_readers_map_(readers_map),
-              is_dt_needed_(false), start_from_(start_from) {}
-
-    // returns the namespace from where we need to start loading this.
-    const android_namespace_t* get_start_from() const {
-        return start_from_;
-    }
-
-    std::unordered_map<const soinfo*, ElfReader>* get_readers_map() {
-        return elf_readers_map_;
-    }
-
-    soinfo* get_soinfo() const {
-        return si_;
-    }
-
-    void set_file_offset(off64_t offset) {
-        file_offset_ = offset;
-    }
-
-    off64_t get_file_offset() const {
-        return file_offset_;
-    }
-
-    off64_t get_file_size() const {
-        return file_size_;
-    }
-    void set_file_size(off64_t offset) {
-        file_size_ = offset;
-    }
-
-    void set_soinfo(soinfo* si) {
-        si_ = si;
-    }
-
-    bool read() {
-        //    task->add_elf_readers_map()
-
-        ElfReader &elf_reader = get_elf_reader();
-        return elf_reader.Read("", fd_, file_offset_, file_size_);
-
-    }
-
-
-    bool load(address_space_params* address_space) {
-        ElfReader& elf_reader = get_elf_reader();
-        if (!elf_reader.Load(address_space)) {
-            return false;
-        }
-        si_->base = elf_reader.load_start();
-        si_->size = elf_reader.load_size();
-        si_->set_mapped_by_caller(elf_reader.is_mapped_by_caller());
-        si_->load_bias = elf_reader.load_bias();
-        si_->phnum = elf_reader.phdr_count();
-        si_->phdr = elf_reader.loaded_phdr();
-        return true;
-    }
-
-
-    void set_fd(int fd, bool assume_ownership) {
-        if (fd_ != -1 && close_fd_) {
-            close(fd_);
-        }
-        fd_ = fd;
-        close_fd_ = assume_ownership;
-    }
-
-    void add_elf_readers_map(const soinfo* si, ElfReader elfReader){
-        elf_readers_map_->emplace(si,elfReader);
-    }
-
-    ElfReader& get_elf_reader() {
-        return (*elf_readers_map_)[si_];
-    }
-
-
-    ~LoadTask() {
-        if (fd_ != -1 && close_fd_) {
-            close(fd_);
-        }
-    }
-
-
-    soinfo* get_needed_by() const {
-        return needed_by_;
-    }
-
-private:
-
-    const char* name_;
-    soinfo* needed_by_;
-    soinfo* si_;
-    const android_dlextinfo* extinfo_;
-    int fd_;
-    bool close_fd_;
-    off64_t file_offset_;
-    off64_t file_size_;
-    std::unordered_map<const soinfo*, ElfReader>* elf_readers_map_;
-    // TODO(dimitry): needed by workaround for http://b/26394120 (the grey-list)
-    bool is_dt_needed_;
-    // END OF WORKAROUND
-    const android_namespace_t* const start_from_;
-
-//    DISALLOW_IMPLICIT_CONSTRUCTORS(LoadTask);
-
-};
-
-typedef std::vector<LoadTask*> LoadTaskList;
-
-
 
 
 static inline uintptr_t untag_address(uintptr_t p) {
@@ -288,54 +124,54 @@ soinfo* soinfo_alloc(ApkNativeInfo &apkNativeInfo){
 }
 
 
-void* LoadNativeSoByMem(ApkNativeInfo &apkNativeInfo){
-
-
-
-
-
-
-
-//    LoadTask task = new LoadTask();
-
-
-    soinfo * si_ = soinfo_alloc(apkNativeInfo);
-    if (si_ == nullptr) {
-        return nullptr;
-    }
-
-//    task->set_soinfo(si);
-
-
-
-    ElfReader * elf_reader = new ElfReader();
-    apkNativeInfo.libname = apkNativeInfo.file_stat.m_filename;
-
-    if(!elf_reader->Read(apkNativeInfo.libname.c_str(),apkNativeInfo.fd,0,apkNativeInfo.file_stat.m_uncomp_size)){
-        LOGE("elf_reader Read failed");
-        return nullptr;
-    }
-
-
-
-    address_space_params  default_params;
-    elf_reader->Load(&default_params);
-
-
-
-    si_->base = elf_reader->load_start();
-    si_->size = elf_reader->load_size();
-    si_->set_mapped_by_caller(elf_reader->is_mapped_by_caller());
-    si_->load_bias = elf_reader->load_bias();
-    si_->phnum = elf_reader->phdr_count();
-    si_->phdr = elf_reader->loaded_phdr();
-
-    si_->prelink_image();
-    si_->set_dt_flags_1(si_->get_dt_flags_1() | DF_1_GLOBAL);
-    si_->call_constructors();
-
-    LOGE("%s","successful");
-}
+//void* LoadNativeSoByMem(ApkNativeInfo &apkNativeInfo){
+//
+//
+//
+//
+//
+//
+//
+////    LoadTask task = new LoadTask();
+//
+//
+//    soinfo * si_ = soinfo_alloc(apkNativeInfo);
+//    if (si_ == nullptr) {
+//        return nullptr;
+//    }
+//
+////    task->set_soinfo(si);
+//
+//
+//
+//    ElfReader * elf_reader = new ElfReader();
+//    apkNativeInfo.libname = apkNativeInfo.file_stat.m_filename;
+//
+//    if(!elf_reader->Read(apkNativeInfo.libname.c_str(),apkNativeInfo.fd,0,apkNativeInfo.file_stat.m_uncomp_size)){
+//        LOGE("elf_reader Read failed");
+//        return nullptr;
+//    }
+//
+//
+//
+//    address_space_params  default_params;
+//    elf_reader->Load(&default_params);
+//
+//
+//
+//    si_->base = elf_reader->load_start();
+//    si_->size = elf_reader->load_size();
+//    si_->set_mapped_by_caller(elf_reader->is_mapped_by_caller());
+//    si_->load_bias = elf_reader->load_bias();
+//    si_->phnum = elf_reader->phdr_count();
+//    si_->phdr = elf_reader->loaded_phdr();
+//
+//    si_->prelink_image();
+//    si_->set_dt_flags_1(si_->get_dt_flags_1() | DF_1_GLOBAL);
+//    si_->call_constructors();
+//
+//    LOGE("%s","successful");
+//}
 
 
 int memfd_create(const char* name, unsigned int flags) {
@@ -376,57 +212,54 @@ uint8_t * Creatememfd(int *fd, int size){
     return ptr;
 }
 
-bool compareSoDependency(ApkNativeInfo a, ApkNativeInfo b) {
-    // Sort in descending order
 
 
 
-//    return a > b;
-}
+bool find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
 
-
-
-bool find_library_internal(const android_namespace_t *ns, LoadTask *task,
-                           LoadTaskList *load_tasks) {
-
-
-
-
-
-
-    return true;
-}
-
-
-
-
-bool find_library(LoadTaskList load_tasks,const char *soname) {
-
-    soinfo* find_soinfo = nullptr;
+    LoadTask* find_soinfo = nullptr;
     for (auto&& task : load_tasks) {
-        soinfo* si = task->get_soinfo();
-        if(0 == strncmp(si->get_soname(),soname, strlen(soname))){
-            find_soinfo = si;
+        if(0 == strncmp(task->get_soinfo()->get_soname(),soname, strlen(soname))){
+            find_soinfo = task;
         }
     }
-    if(find_soinfo == nullptr){
-        find_system_library_byname(soname);
+    if(find_soinfo != nullptr) {
+        if(find_soinfo->get_soinfo()->is_linked()){
+            find_soinfo->soload(load_tasks);
+        }
+        return find_soinfo->get_soinfo();
+
+    }else{
+        return find_system_library_byname(soname);
     }
 
 }
 
 
+void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
 
+    SymbolLookupList lookup_list;
+
+    for_each_dt_needed(get_elf_reader(), [&](const char* name) {
+        LOGE("NEED name: %s",name);
+        find_library(load_tasks, name);
+//            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
+    });
+
+    address_space_params  default_params;
+    load(&default_params);
+    get_soinfo()->prelink_image();
+    get_soinfo()->set_dt_flags_1(get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
+    get_soinfo()->link_image(lookup_list);
+}
 
 bool LoadApkModule(char * apkSource){
 
 
-//    soinfo *si = find_containing_library((const void*)linker_protect);
-//    return true;
 
 
     std::unordered_map<const soinfo*, ElfReader> readers_map;
-    LoadTaskList load_tasks;
+    std::vector<LoadTask*> load_tasks;
 
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
@@ -505,29 +338,11 @@ bool LoadApkModule(char * apkSource){
 //    });
 
 
-    address_space_params  default_params;
-    for (auto&& task : load_tasks) {
-
-        for_each_dt_needed(task->get_elf_reader(), [&](const char* name) {
-            LOGE("NEED name: %s",name);
-            find_library(load_tasks, name);
-//            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
-        });
-
-
-        task->load(&default_params);
-        task->get_soinfo()->prelink_image();
-        task->get_soinfo()->set_dt_flags_1(task->get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
-        task->get_soinfo()->link_image();
-
-    }
-
 //    for (auto&& task : load_tasks) {
-//        soinfo* si = task->get_soinfo();
-//        soinfo* needed_by = task->get_needed_by();
+//
+//        task->soload(&load_tasks);
 //
 //    }
-
 
 
 

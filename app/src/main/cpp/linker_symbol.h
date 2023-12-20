@@ -42,7 +42,7 @@ class SymbolLookupList {
     size_t slow_path_count_ = 0;
 
 public:
-    explicit SymbolLookupList(soinfo* si);
+    SymbolLookupList(){};
     SymbolLookupList(const soinfo_list_t& global_group, const soinfo_list_t& local_group);
     void set_dt_symbolic_lib(soinfo* symbolic_lib);
 
