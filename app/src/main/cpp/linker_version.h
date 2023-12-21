@@ -13,7 +13,7 @@ public:
     VersionTracker() = default;
     bool init(const soinfo* si_from);
 
-    void * get_version_info(ElfW(Versym) source_symver) const;
+    const version_info * get_version_info(ElfW(Versym) source_symver) const;
 private:
     bool init_verneed(const soinfo* si_from);
     bool init_verdef(const soinfo* si_from);

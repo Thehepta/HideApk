@@ -137,3 +137,13 @@ void VersionTracker::add_version_info(size_t source_index,
     version_infos[source_index].name = ver_name;
     version_infos[source_index].target_si = target_si;
 }
+
+const version_info* VersionTracker::get_version_info(ElfW(Versym) source_symver) const {
+    if (source_symver < 2 ||
+        source_symver >= version_infos.size() ||
+        version_infos[source_symver].name == nullptr) {
+        return nullptr;
+    }
+
+    return &version_infos[source_symver];
+}

@@ -8,6 +8,7 @@
 #include "linker_relocate.h"
 #include "linker_soinfo.h"
 #include "linker_phdr.h"
+#include "linker_version.h"
 
 struct linker_stats_t {
     int count[kRelocMax];
@@ -478,7 +479,93 @@ bool packed_relocate(Relocator& relocator, Args ...args) {
            packed_relocate_impl<OptMode>(relocator, args...);
 }
 
+bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
+    VersionTracker version_tracker;
+    if (!version_tracker.init(this)) {
+        return false;
+    }
+
+
+    Relocator relocator(version_tracker, lookup_list);
+    relocator.si = this;
+    relocator.si_strtab = strtab_;
+    relocator.si_strtab_size = has_min_version(1) ? strtab_size_ : SIZE_MAX;
+    relocator.si_symtab = symtab_;
+//    relocator.tlsdesc_args = &tlsdesc_args_;
+//    relocator.tls_tp_base = __libc_shared_globals()->static_tls_layout.offset_thread_pointer();
+
+    if (android_relocs_ != nullptr) {
+        // check signature
+        if (android_relocs_size_ > 3 &&
+            android_relocs_[0] == 'A' &&
+            android_relocs_[1] == 'P' &&
+            android_relocs_[2] == 'S' &&
+            android_relocs_[3] == '2') {
+            DEBUG("[ android relocating %s ]", get_realpath());
+
+            const uint8_t* packed_relocs = android_relocs_ + 4;
+            const size_t packed_relocs_size = android_relocs_size_ - 4;
+
+            if (!packed_relocate<RelocMode::Typical>(relocator, sleb128_decoder(packed_relocs, packed_relocs_size))) {
+                return false;
+            }
+        } else {
+            DL_ERR("bad android relocation header.");
+            return false;
+        }
+    }
+
+    if (relr_ != nullptr) {
+        DEBUG("[ relocating %s relr ]", get_realpath());
+        if (!relocate_relr()) {
+            return false;
+        }
+    }
+
+
+#if defined(USE_RELA)
+    //    if (rela_ != nullptr) {
+//        DEBUG("[ relocating %s rela ]", get_realpath());
+//
+//        if (!plain_relocate<RelocMode::Typical>(relocator, rela_, rela_count_)) {
+//            return false;
+//        }
+//    }
+//    if (plt_rela_ != nullptr) {
+//        DEBUG("[ relocating %s plt rela ]", get_realpath());
+//        if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rela_, plt_rela_count_)) {
+//            return false;
+//        }
+//    }
+#else
+//    if (rel_ != nullptr) {
+//    DEBUG("[ relocating %s rel ]", get_realpath());
+//    if (!plain_relocate<RelocMode::Typical>(relocator, rel_, rel_count_)) {
+//      return false;
+//    }
+//  }
+//  if (plt_rel_ != nullptr) {
+//    DEBUG("[ relocating %s plt rel ]", get_realpath());
+//    if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rel_, plt_rel_count_)) {
+//      return false;
+//    }
+//  }
+#endif
+
+    // Once the tlsdesc_args_ vector's size is finalized, we can write the addresses of its elements
+    // into the TLSDESC relocations.
+#if defined(__aarch64__)
+    // Bionic currently only implements TLSDESC for arm64.
+//    for (const std::pair<TlsDescriptor*, size_t>& pair : relocator.deferred_tlsdesc_relocs) {
+//        TlsDescriptor* desc = pair.first;
+//        desc->func = tlsdesc_resolver_dynamic;
+//        desc->arg = reinterpret_cast<size_t>(&tlsdesc_args_[pair.second]);
+//    }
+#endif
+
+    return true;
+}
 
 
 
