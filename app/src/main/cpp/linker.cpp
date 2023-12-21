@@ -215,7 +215,7 @@ uint8_t * Creatememfd(int *fd, int size){
 
 
 
-bool find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
+soinfo* find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
 
     LoadTask* find_soinfo = nullptr;
     for (auto&& task : load_tasks) {
@@ -242,7 +242,9 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
 
     for_each_dt_needed(get_elf_reader(), [&](const char* name) {
         LOGE("NEED name: %s",name);
-        find_library(load_tasks, name);
+        soinfo* si = find_library(load_tasks, name);
+        SymbolLookupLib SyLib = si->get_lookup_lib();
+        lookup_list.addSymbolLib(SyLib);
 //            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
     });
 
@@ -254,9 +256,6 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
 }
 
 bool LoadApkModule(char * apkSource){
-
-
-
 
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     std::vector<LoadTask*> load_tasks;

@@ -49,6 +49,9 @@ public:
     const SymbolLookupLib* begin() const { return begin_; }
     const SymbolLookupLib* end() const { return end_; }
     bool needs_slow_path() const { return slow_path_count_ > 0; }
+    void addSymbolLib(SymbolLookupLib SyLib){
+        libs_.push_back(SyLib);
+    }
 };
 
 
