@@ -5,6 +5,8 @@
 #include "linker_version.h"
 
 
+
+
 struct soinfo;
 
 
@@ -54,6 +56,33 @@ static bool for_each_verdef(const soinfo* si, F functor) {
     }
 
     return true;
+}
+
+
+
+ElfW(Versym) find_verdef_version_index(const soinfo* si, const version_info* vi) {
+    if (vi == nullptr) {
+        return kVersymNotNeeded;
+    }
+
+    ElfW(Versym) result = kVersymGlobal;
+
+    if (!for_each_verdef(si,
+                         [&](size_t, const ElfW(Verdef)* verdef, const ElfW(Verdaux)* verdaux) {
+                             if (verdef->vd_hash == vi->elf_hash &&
+                                 strcmp(vi->name, si->get_string(verdaux->vda_name)) == 0) {
+                                 result = verdef->vd_ndx;
+                                 return true;
+                             }
+
+                             return false;
+                         }
+    )) {
+        // verdef should have already been validated in prelink_image.
+        LOGE("invalid verdef after prelinking: %s",si->get_realpath());
+    }
+
+    return result;
 }
 
 

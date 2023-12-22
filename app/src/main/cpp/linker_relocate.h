@@ -6,6 +6,9 @@
 
 #include "linker_reloc_iterators.h"
 
+static constexpr ElfW(Versym) kVersymHiddenBit = 0x8000;
+
+
 class VersionTracker;
 struct soinfo;
 struct version_info;

@@ -8,6 +8,7 @@
 #include "linker_utils.h"
 #include "linker_version.h"
 #include "linker_relocate.h"
+#include "linker_gnu_hash.h"
 
 int g_argc = 0;
 char** g_argv = nullptr;
@@ -819,3 +820,148 @@ bool soinfo::relocate_relr() {
     }
     return true;
 }
+
+const ElfW(Sym) *
+soinfo::find_symbol_by_name(SymbolName &symbol_name, const version_info *vi) const {
+    return is_gnu_hash() ? gnu_lookup(symbol_name, vi) : elf_lookup(symbol_name, vi);
+}
+
+
+
+static inline bool check_symbol_version(const ElfW(Versym)* ver_table, uint32_t sym_idx,
+                                        const ElfW(Versym) verneed) {
+    if (ver_table == nullptr) return true;
+    const uint32_t verdef = ver_table[sym_idx];
+    return (verneed == kVersymNotNeeded) ?
+           !(verdef & kVersymHiddenBit) :
+           verneed == (verdef & ~kVersymHiddenBit);
+}
+
+inline bool is_symbol_global_and_defined(const soinfo* si, const ElfW(Sym)* s) {
+    if (__predict_true(ELF_ST_BIND(s->st_info) == STB_GLOBAL ||
+                       ELF_ST_BIND(s->st_info) == STB_WEAK)) {
+        return s->st_shndx != SHN_UNDEF;
+    } else if (__predict_false(ELF_ST_BIND(s->st_info) != STB_LOCAL)) {
+        DL_WARN("Warning: unexpected ST_BIND value: %d for \"%s\" in \"%s\" (ignoring)",
+                ELF_ST_BIND(s->st_info), si->get_string(s->st_name), si->get_realpath());
+    }
+    return false;
+}
+
+
+const ElfW(Sym)* soinfo::gnu_lookup(SymbolName& symbol_name, const version_info* vi) const {
+    const uint32_t hash = symbol_name.gnu_hash();
+
+    constexpr uint32_t kBloomMaskBits = sizeof(ElfW(Addr)) * 8;
+    const uint32_t word_num = (hash / kBloomMaskBits) & gnu_maskwords_;
+    const ElfW(Addr) bloom_word = gnu_bloom_filter_[word_num];
+    const uint32_t h1 = hash % kBloomMaskBits;
+    const uint32_t h2 = (hash >> gnu_shift2_) % kBloomMaskBits;
+
+    LOGE( "SEARCH %s in %s@%p (gnu)",
+               symbol_name.get_name(), get_realpath(), reinterpret_cast<void*>(base));
+
+    // test against bloom filter
+    if ((1 & (bloom_word >> h1) & (bloom_word >> h2)) == 0) {
+        LOGE( "NOT FOUND %s in %s@%p",
+                   symbol_name.get_name(), get_realpath(), reinterpret_cast<void*>(base));
+
+        return nullptr;
+    }
+
+    // bloom test says "probably yes"...
+    uint32_t n = gnu_bucket_[hash % gnu_nbucket_];
+
+    if (n == 0) {
+        LOGE( "NOT FOUND %s in %s@%p",
+                   symbol_name.get_name(), get_realpath(), reinterpret_cast<void*>(base));
+
+        return nullptr;
+    }
+
+    const ElfW(Versym) verneed = find_verdef_version_index(this, vi);
+    const ElfW(Versym)* versym = get_versym_table();
+
+    do {
+        ElfW(Sym)* s = symtab_ + n;
+        if (((gnu_chain_[n] ^ hash) >> 1) == 0 &&
+            check_symbol_version(versym, n, verneed) &&
+            strcmp(get_string(s->st_name), symbol_name.get_name()) == 0 &&
+            is_symbol_global_and_defined(this, s)) {
+            LOGE( "FOUND %s in %s (%p) %zd",
+                       symbol_name.get_name(), get_realpath(), reinterpret_cast<void*>(s->st_value),
+                       static_cast<size_t>(s->st_size));
+            return symtab_ + n;
+        }
+    } while ((gnu_chain_[n++] & 1) == 0);
+
+    LOGE( "NOT FOUND %s in %s@%p",
+               symbol_name.get_name(), get_realpath(), reinterpret_cast<void*>(base));
+
+    return nullptr;
+}
+
+const ElfW(Sym)* soinfo::elf_lookup(SymbolName& symbol_name, const version_info* vi) const {
+    uint32_t hash = symbol_name.elf_hash();
+
+    LOGE( "SEARCH %s in %s@%p h=%x(elf) %zd",
+               symbol_name.get_name(), get_realpath(),
+               reinterpret_cast<void*>(base), hash, hash % nbucket_);
+
+    const ElfW(Versym) verneed = find_verdef_version_index(this, vi);
+    const ElfW(Versym)* versym = get_versym_table();
+
+    for (uint32_t n = bucket_[hash % nbucket_]; n != 0; n = chain_[n]) {
+        ElfW(Sym)* s = symtab_ + n;
+
+        if (check_symbol_version(versym, n, verneed) &&
+            strcmp(get_string(s->st_name), symbol_name.get_name()) == 0 &&
+            is_symbol_global_and_defined(this, s)) {
+            LOGE("FOUND %s in %s (%p) %zd",
+                       symbol_name.get_name(), get_realpath(),
+                       reinterpret_cast<void*>(s->st_value),
+                       static_cast<size_t>(s->st_size));
+            return symtab_ + n;
+        }
+    }
+
+    LOGE( "NOT FOUND %s in %s@%p %x %zd",
+               symbol_name.get_name(), get_realpath(),
+               reinterpret_cast<void*>(base), hash, hash % nbucket_);
+
+    return nullptr;
+}
+
+uint32_t calculate_elf_hash(const char* name) {
+    const uint8_t* name_bytes = reinterpret_cast<const uint8_t*>(name);
+    uint32_t h = 0, g;
+
+    while (*name_bytes) {
+        h = (h << 4) + *name_bytes++;
+        g = h & 0xf0000000;
+        h ^= g;
+        h ^= g >> 24;
+    }
+
+    return h;
+}
+
+
+uint32_t SymbolName::elf_hash() {
+    if (!has_elf_hash_) {
+        elf_hash_ = calculate_elf_hash(name_);
+        has_elf_hash_ = true;
+    }
+
+    return elf_hash_;
+}
+
+uint32_t SymbolName::gnu_hash() {
+    if (!has_gnu_hash_) {
+        gnu_hash_ = calculate_gnu_hash(name_).first;
+        has_gnu_hash_ = true;
+    }
+
+    return gnu_hash_;
+}
+

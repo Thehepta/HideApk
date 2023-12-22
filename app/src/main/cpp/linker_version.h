@@ -27,4 +27,8 @@ private:
 
 
 
+ElfW(Versym) find_verdef_version_index(const soinfo* si, const version_info* vi);
 
+
+constexpr ElfW(Versym) kVersymNotNeeded = 0;
+constexpr ElfW(Versym) kVersymGlobal = 1;

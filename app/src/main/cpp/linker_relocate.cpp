@@ -10,6 +10,8 @@
 #include "linker_phdr.h"
 #include "linker_version.h"
 
+
+
 struct linker_stats_t {
     int count[kRelocMax];
 };
@@ -30,13 +32,34 @@ const char* Relocator::get_string(ElfW(Word) index) {
     return si_strtab + index;
 }
 
+
+
+static inline bool check_symbol_version(const ElfW(Versym)* ver_table, uint32_t sym_idx,
+                                        const ElfW(Versym) verneed) {
+    if (ver_table == nullptr) return true;
+    const uint32_t verdef = ver_table[sym_idx];
+    return (verneed == kVersymNotNeeded) ?
+           !(verdef & kVersymHiddenBit) :
+           verneed == (verdef & ~kVersymHiddenBit);
+}
+
+
+inline bool is_symbol_global_and_defined(const soinfo* si, const ElfW(Sym)* s) {
+    if (__predict_true(ELF_ST_BIND(s->st_info) == STB_GLOBAL ||
+                       ELF_ST_BIND(s->st_info) == STB_WEAK)) {
+        return s->st_shndx != SHN_UNDEF;
+    } else if (__predict_false(ELF_ST_BIND(s->st_info) != STB_LOCAL)) {
+        DL_WARN("Warning: unexpected ST_BIND value: %d for \"%s\" in \"%s\" (ignoring)",
+                ELF_ST_BIND(s->st_info), si->get_string(s->st_name), si->get_realpath());
+    }
+    return false;
+}
+
+
 template <bool IsGeneral>
 __attribute__((noinline)) static const ElfW(Sym)*
 soinfo_do_lookup_impl(const char* name, const version_info* vi,
                       soinfo** si_found_in, const SymbolLookupList& lookup_list) {
-
-
-
 
     const auto [ hash, name_len ] = calculate_gnu_hash(name);
     constexpr uint32_t kBloomMaskBits = sizeof(ElfW(Addr)) * 8;
@@ -136,7 +159,7 @@ const ElfW(Sym)* soinfo_do_lookup(const char* name, const version_info* vi,
 template <bool DoLogging>
 __attribute__((always_inline))
 inline bool lookup_symbol(Relocator& relocator, uint32_t r_sym, const char* sym_name,
-                                 soinfo** found_in, const ElfW(Sym)** sym) {
+                          soinfo** found_in, const ElfW(Sym)** sym) {
     if (r_sym == relocator.cache_sym_val) {
         *found_in = relocator.cache_si;
         *sym = relocator.cache_sym;
@@ -264,7 +287,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
   auto get_addend_norel = [&]() -> ElfW(Addr) { return 0; };
 #endif
 
-    if (IsGeneral && is_tls_reloc(r_type)) {
+    if (IsGeneral) {
         if (r_sym == 0) {
             // By convention in ld.bfd and lld, an omitted symbol on a TLS relocation
             // is a reference to the current module.
@@ -476,6 +499,30 @@ bool packed_relocate_impl(Relocator& relocator, sleb128_decoder decoder) {
     });
 }
 
+
+
+template <RelocMode Mode>
+__attribute__((noinline))
+static bool plain_relocate_impl(Relocator& relocator, rel_t* rels, size_t rel_count) {
+    for (size_t i = 0; i < rel_count; ++i) {
+        if (!process_relocation<Mode>(relocator, rels[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <RelocMode OptMode, typename ...Args>
+static bool plain_relocate(Relocator& relocator, Args ...args) {
+    return needs_slow_relocate_loop(relocator) ?
+           plain_relocate_impl<RelocMode::General>(relocator, args...) :
+           plain_relocate_impl<OptMode>(relocator, args...);
+}
+
+
+
+
+
 template <RelocMode OptMode, typename ...Args>
 bool packed_relocate(Relocator& relocator, Args ...args) {
     return needs_slow_relocate_loop(relocator) ?
@@ -529,21 +576,21 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
 
 #if defined(USE_RELA)
-    //    if (rela_ != nullptr) {
-//        DEBUG("[ relocating %s rela ]", get_realpath());
-//
-//        if (!plain_relocate<RelocMode::Typical>(relocator, rela_, rela_count_)) {
-//            return false;
-//        }
-//    }
-//    if (plt_rela_ != nullptr) {
-//        DEBUG("[ relocating %s plt rela ]", get_realpath());
-//        if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rela_, plt_rela_count_)) {
-//            return false;
-//        }
-//    }
+    if (rela_ != nullptr) {
+        DEBUG("[ relocating %s rela ]", get_realpath());
+
+        if (!plain_relocate<RelocMode::Typical>(relocator, rela_, rela_count_)) {
+            return false;
+        }
+    }
+    if (plt_rela_ != nullptr) {
+        DEBUG("[ relocating %s plt rela ]", get_realpath());
+        if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rela_, plt_rela_count_)) {
+            return false;
+        }
+    }
 #else
-//    if (rel_ != nullptr) {
+    //    if (rel_ != nullptr) {
 //    DEBUG("[ relocating %s rel ]", get_realpath());
 //    if (!plain_relocate<RelocMode::Typical>(relocator, rel_, rel_count_)) {
 //      return false;
