@@ -609,7 +609,7 @@ const char *soinfo::get_soname() const {
     return old_name_;
   }
 #else
-    return soname_;
+    return soname_.c_str();
 #endif
 
 }
@@ -660,14 +660,28 @@ void soinfo::link_image(SymbolLookupList& lookup_list) {
 
     if (!relocate( lookup_list)) {
     }
-
+    DEBUG("[ finished linking %s ]", get_realpath());
+#if !defined(__LP64__)
+    if (has_text_relocations) {
+        // All relocations are done, we can protect our segments back to read-only.
+        if (phdr_table_protect_segments(phdr, phnum, load_bias) < 0) {
+            DL_ERR("can't protect segments for \"%s\": %s",
+                   get_realpath(), strerror(errno));
+            return;
+        }
+    }
+#endif
 
 
 }
 
+void soinfo::set_linked() {
+    flags_ |= FLAG_LINKED;
+}
+
+
 bool soinfo::is_linked() const {
-//    return (flags_ & FLAG_LINKED) != 0;
-    return  0;
+    return (flags_ & FLAG_LINKED) != 0;
 }
 
 const ElfW(Versym)* soinfo::get_versym(size_t n) const {
@@ -931,6 +945,7 @@ const ElfW(Sym)* soinfo::elf_lookup(SymbolName& symbol_name, const version_info*
 
     return nullptr;
 }
+
 
 uint32_t calculate_elf_hash(const char* name) {
     const uint8_t* name_bytes = reinterpret_cast<const uint8_t*>(name);

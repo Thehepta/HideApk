@@ -59,54 +59,51 @@ inline bool is_symbol_global_and_defined(const soinfo* si, const ElfW(Sym)* s) {
 template <bool IsGeneral>
 __attribute__((noinline)) static const ElfW(Sym)*
 soinfo_do_lookup_impl(const char* name, const version_info* vi,
-                      soinfo** si_found_in, const SymbolLookupList& lookup_list) {
+                      soinfo** si_found_in, SymbolLookupList lookup_list) {
 
     const auto [ hash, name_len ] = calculate_gnu_hash(name);
     constexpr uint32_t kBloomMaskBits = sizeof(ElfW(Addr)) * 8;
     SymbolName elf_symbol_name(name);
 
-    const SymbolLookupLib* end = lookup_list.end();
-    const SymbolLookupLib* it = lookup_list.begin();
+//    const SymbolLookupLib* end = lookup_list.end();
+//    const SymbolLookupLib* it = lookup_list.begin();
 
     while (true) {
-        const SymbolLookupLib* lib;
         uint32_t sym_idx;
 
         // Iterate over libraries until we find one whose Bloom filter matches the symbol we're
         // searching for.
-        while (true) {
-            if (it == end) return nullptr;
-            lib = it++;
 
-            if (IsGeneral && lib->needs_sysv_lookup()) {
-                if (const ElfW(Sym)* sym = lib->si_->find_symbol_by_name(elf_symbol_name, vi)) {
-                    *si_found_in = lib->si_;
+        SymbolLookupLib  lib ;
+        const std::vector<SymbolLookupLib> vector =  lookup_list.getVectorSymLib();
+        ;
+//        for (auto it = vector.begin() ; it != vector.end(); it++) {
+        for (int i = 0; i < vector.size(); ++i) {
+
+            lib = vector[i];
+            if (IsGeneral && lib.needs_sysv_lookup()) {
+                if (const ElfW(Sym)* sym = lib.si_->find_symbol_by_name(elf_symbol_name, vi)) {
+                    *si_found_in = lib.si_;
                     return sym;
                 }
                 continue;
             }
-
-//            if (IsGeneral) {
-//                TRACE_TYPE(LOOKUP, "SEARCH %s in %s@%p (gnu)",
-//                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
-//            }
-
-            const uint32_t word_num = (hash / kBloomMaskBits) & lib->gnu_maskwords_;
-            const ElfW(Addr) bloom_word = lib->gnu_bloom_filter_[word_num];
+            if (IsGeneral) {
+                LOGE( "SEARCH %s in %s@%p (gnu)",name, lib.si_->get_realpath(), reinterpret_cast<void*>(lib.si_->base));
+            }
+            const uint32_t word_num = (hash / kBloomMaskBits) & lib.gnu_maskwords_;
+            const ElfW(Addr) bloom_word = lib.gnu_bloom_filter_[word_num];
             const uint32_t h1 = hash % kBloomMaskBits;
-            const uint32_t h2 = (hash >> lib->gnu_shift2_) % kBloomMaskBits;
-
+            const uint32_t h2 = (hash >> lib.gnu_shift2_) % kBloomMaskBits;
             if ((1 & (bloom_word >> h1) & (bloom_word >> h2)) == 1) {
-                sym_idx = lib->gnu_bucket_[hash % lib->gnu_nbucket_];
+                sym_idx = lib.gnu_bucket_[hash % lib.gnu_nbucket_];
                 if (sym_idx != 0) {
                     break;
                 }
             }
-
-//            if (IsGeneral) {
-//                TRACE_TYPE(LOOKUP, "NOT FOUND %s in %s@%p",
-//                           name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
-//            }
+            if (IsGeneral) {
+                LOGE( "NOT FOUND %s in %s@%p",name, lib.si_->get_realpath(), reinterpret_cast<void*>(lib.si_->base));
+            }
         }
 
         // Search the library's hash table chain.
@@ -117,18 +114,18 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
         const ElfW(Sym)* sym = nullptr;
 
         do {
-            sym = lib->symtab_ + sym_idx;
-            chain_value = lib->gnu_chain_[sym_idx];
+            sym = lib.symtab_ + sym_idx;
+            chain_value = lib.gnu_chain_[sym_idx];
             if ((chain_value >> 1) == (hash >> 1)) {
                 if (vi != nullptr && !calculated_verneed) {
                     calculated_verneed = true;
-                    verneed = find_verdef_version_index(lib->si_, vi);
+                    verneed = find_verdef_version_index(lib.si_, vi);
                 }
-                if (check_symbol_version(lib->versym_, sym_idx, verneed) &&
-                    static_cast<size_t>(sym->st_name) + name_len + 1 <= lib->strtab_size_ &&
-                    memcmp(lib->strtab_ + sym->st_name, name, name_len + 1) == 0 &&
-                    is_symbol_global_and_defined(lib->si_, sym)) {
-                    *si_found_in = lib->si_;
+                if (check_symbol_version(lib.versym_, sym_idx, verneed) &&
+                    static_cast<size_t>(sym->st_name) + name_len + 1 <= lib.strtab_size_ &&
+                    memcmp(lib.strtab_ + sym->st_name, name, name_len + 1) == 0 &&
+                    is_symbol_global_and_defined(lib.si_, sym)) {
+                    *si_found_in = lib.si_;
 //                    if (IsGeneral) {
 //                        TRACE_TYPE(LOOKUP, "FOUND %s in %s (%p) %zd",
 //                                   name, lib->si_->get_realpath(), reinterpret_cast<void*>(sym->st_value),

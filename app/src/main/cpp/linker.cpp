@@ -22,6 +22,13 @@ android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(re
 
 soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) resolve_elf_internal_symbol(get_android_linker_path(),"__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
 
+soinfo* (*solist_get_head)() = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z15solist_get_headv");
+
+soinfo* (*solist_get_somain)() = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z17solist_get_somainv");
+
+char* (*soinfo_get_soname)(soinfo*) = (char* (*)(soinfo*))resolve_elf_internal_symbol(get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
+
+
 
 static inline uintptr_t untag_address(uintptr_t p) {
 #if defined(__aarch64__)
@@ -37,31 +44,31 @@ static inline T* untag_address(T* p) {
 }
 soinfo* find_system_library_byname(const char* soname) {
 
-    static soinfo* (*solist_get_head)() = NULL;
-    if (!solist_get_head)
-        solist_get_head = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z15solist_get_headv");
-
-    static soinfo* (*solist_get_somain)() = NULL;
-    if (!solist_get_somain)
-        solist_get_somain = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z17solist_get_somainv");
-
     for (soinfo* si = solist_get_head(); si != nullptr; si = si->next) {
-        if(0 == strncmp(si->get_soname(),soname, strlen(soname))) {
-            return si;
+        char* ret_name = soinfo_get_soname(si);
+        if(ret_name!= nullptr){
+            LOGE("get_soname : %s",ret_name);
+            if(0 == strncmp(ret_name,soname, strlen(soname))) {
+                return si;
+            }
         }
+        else{
+            LOGE("get_soname == null so->realpath: %s",si->get_realpath());
+        }
+
     }
     return nullptr;
 }
 
 soinfo* find_containing_library(const void* p) {
 
-    static soinfo* (*solist_get_head)() = NULL;
-    if (!solist_get_head)
-        solist_get_head = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z15solist_get_headv");
+//    static soinfo* (*solist_get_head)() = NULL;
+//    if (!solist_get_head)
+//        solist_get_head = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z15solist_get_headv");
 
-    static soinfo* (*solist_get_somain)() = NULL;
-    if (!solist_get_somain)
-        solist_get_somain = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z17solist_get_somainv");
+//    static soinfo* (*solist_get_somain)() = NULL;
+//    if (!solist_get_somain)
+//        solist_get_somain = (soinfo* (*)())resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z17solist_get_somainv");
 
     ElfW(Addr) address = reinterpret_cast<ElfW(Addr)>(untag_address(p));
     for (soinfo* si = solist_get_head(); si != nullptr; si = si->next) {
@@ -235,6 +242,35 @@ soinfo* find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
 
 }
 
+const char* fix_dt_needed(const char* dt_needed, const char* sopath __unused) {
+#if !defined(__LP64__)
+    int app_target_api_level = android_get_application_target_sdk_version();
+    if (app_target_api_level < 23) {
+        const char* bname = basename(dt_needed);
+        if (bname != dt_needed) {
+            DL_WARN_documented_change(23,
+                                      "invalid-dt_needed-entries-enforced-for-api-level-23",
+                                      "library \"%s\" has invalid DT_NEEDED entry \"%s\"",
+                                      sopath, dt_needed, app_target_api_level);
+//      add_dlwarning(sopath, "invalid DT_NEEDED entry",  dt_needed);
+        }
+
+        return bname;
+    }
+#endif
+    return dt_needed;
+}
+
+
+template<typename F>
+static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
+    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
+        if (d->d_tag == DT_NEEDED) {
+            action(fix_dt_needed(elf_reader.get_string(d->d_un.d_val), elf_reader.name()));
+        }
+    }
+}
+
 
 void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
 
@@ -245,7 +281,6 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
         soinfo* si = find_library(load_tasks, name);
         SymbolLookupLib SyLib = si->get_lookup_lib();
         lookup_list.addSymbolLib(SyLib);
-//            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
     });
 
     address_space_params  default_params;
@@ -253,6 +288,9 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
     get_soinfo()->prelink_image();
     get_soinfo()->set_dt_flags_1(get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
     get_soinfo()->link_image(lookup_list);
+
+    get_soinfo()->set_linked();
+    get_soinfo()->call_constructors();
 }
 
 bool LoadApkModule(char * apkSource){
@@ -331,20 +369,10 @@ bool LoadApkModule(char * apkSource){
         }
     }
 
-//    for_each_dt_needed(task->get_elf_reader(), [&](const char* name) {
-//        LOGE("NEED name: %s",name);
-////            load_tasks.push_back(LoadTask::create(name, si, const_cast<android_namespace_t *>(task->get_start_from()), task->get_readers_map()));
-//    });
 
-
-//    for (auto&& task : load_tasks) {
-//
-//        task->soload(&load_tasks);
-//
-//    }
-
-
-
+    for (auto&& task : load_tasks) {
+        task->soload(load_tasks);
+    }
 
     linker_unprotect();
 

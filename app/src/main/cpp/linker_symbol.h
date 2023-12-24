@@ -43,8 +43,8 @@ class SymbolLookupList {
 
 public:
     SymbolLookupList(){};
-    SymbolLookupList(const soinfo_list_t& global_group, const soinfo_list_t& local_group);
-    void set_dt_symbolic_lib(soinfo* symbolic_lib);
+//    SymbolLookupList(const soinfo_list_t& global_group, const soinfo_list_t& local_group);
+//    void set_dt_symbolic_lib(soinfo* symbolic_lib);
 
     const SymbolLookupLib* begin() const { return begin_; }
     const SymbolLookupLib* end() const { return end_; }
@@ -52,6 +52,10 @@ public:
     void addSymbolLib(SymbolLookupLib SyLib){
         libs_.push_back(SyLib);
     }
+    std::vector<SymbolLookupLib> getVectorSymLib(){
+        return this->libs_;
+    }
+
 };
 
 

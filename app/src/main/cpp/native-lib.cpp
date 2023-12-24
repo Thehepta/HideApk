@@ -73,7 +73,6 @@ Java_com_hepta_hideapk_MainActivity_hideApk(JNIEnv *env, jobject thiz, jstring s
 
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
     LoadApkModule(pkgName);
-
     return;
 }
 

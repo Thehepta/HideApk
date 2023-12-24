@@ -18,7 +18,7 @@ typedef void (*linker_ctor_function_t)(int, char**, char**);
 
 #define SUPPORTED_DT_FLAGS_1 (DF_1_NOW | DF_1_GLOBAL | DF_1_NODELETE | DF_1_PIE)
 
-
+#define FLAG_LINKED           0x00000001
 #define FLAG_LINKER           0x00000010 // The linker itself
 #define FLAG_GNU_HASH         0x00000040 // uses gnu hash
 #define FLAG_MAPPED_BY_CALLER 0x00000080 // the map is reserved by the caller
@@ -310,8 +310,13 @@ private:
 
     uint8_t* android_relocs_;
     size_t android_relocs_size_;
-
-    const char* soname_;
+//#if __ANDROID_API__ >= 31
+    // 在 Android 12.0 或更高版本上是string
+    std::string soname_;
+//#else
+//    const char* soname_;
+//
+//#endif
     std::string realpath_;
 
     const ElfW(Versym)* versym_;

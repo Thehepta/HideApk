@@ -101,35 +101,7 @@ constexpr size_t kLibraryAlignment = 1UL << kLibraryAlignmentBits;
 
 
 
-//const char* fix_dt_needed1(const char* dt_needed, const char* sopath __unused) {
-//#if !defined(__LP64__)
-//    int app_target_api_level = android_get_application_target_sdk_version();
-//  if (app_target_api_level < 23) {
-//    const char* bname = basename(dt_needed);
-//    if (bname != dt_needed) {
-//      DL_WARN_documented_change(23,
-//                                "invalid-dt_needed-entries-enforced-for-api-level-23",
-//                                "library \"%s\" has invalid DT_NEEDED entry \"%s\"",
-//                                sopath, dt_needed, app_target_api_level);
-////      add_dlwarning(sopath, "invalid DT_NEEDED entry",  dt_needed);
-//    }
-//
-//    return bname;
-//  }
-//#endif
-//    return dt_needed;
-//}
 
-
-template<typename F>
-static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
-    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
-        if (d->d_tag == DT_NEEDED) {
-
-//            action(fix_dt_needed(elf_reader.get_string(d->d_un.d_val), elf_reader.name()));
-        }
-    }
-}
 class ElfReader;
 
 
