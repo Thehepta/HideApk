@@ -375,7 +375,7 @@ bool LoadApkModule(char * apkSource){
     }
 
     linker_unprotect();
-
+    return true;
 
 }
 

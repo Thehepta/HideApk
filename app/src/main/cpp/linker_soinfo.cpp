@@ -9,10 +9,14 @@
 #include "linker_version.h"
 #include "linker_relocate.h"
 #include "linker_gnu_hash.h"
+#include "linker.h"
+#include "elf_symbol_resolver.h"
 
 int g_argc = 0;
 char** g_argv = nullptr;
 char** g_envp = nullptr;
+
+ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr) =(ElfW(Addr) (*)(ElfW(Addr) resolver_addr)) resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z19call_ifunc_resolvery");
 
 #if defined(__LP64__)
 static constexpr const char* kLibPath = "lib64";
@@ -656,11 +660,37 @@ const char* soinfo::get_string(ElfW(Word) index) const {
     return strtab_ + index;
 }
 
-void soinfo::link_image(SymbolLookupList& lookup_list) {
+bool soinfo::link_image(SymbolLookupList& lookup_list) {
+
+    local_group_root_ = this;
+
+    if ((flags_ & FLAG_LINKER) == 0 && local_group_root_ == this) {
+        target_sdk_version_ = android_get_application_target_sdk_version();
+    }
+
+#if !defined(__LP64__)
+    if (has_text_relocations) {
+    // Fail if app is targeting M or above.
+    int app_target_api_level = get_application_target_sdk_version();
+    if (app_target_api_level >= 23) {
+      DL_ERR_AND_LOG("\"%s\" has text relocations (https://android.googlesource.com/platform/"
+                     "bionic/+/master/android-changes-for-ndk-developers.md#Text-Relocations-"
+                     "Enforced-for-API-level-23)", get_realpath());
+      return false;
+    }
+    if (phdr_table_unprotect_segments(phdr, phnum, load_bias) < 0) {
+      DL_ERR("can't unprotect loadable segments for \"%s\": %s", get_realpath(), strerror(errno));
+      return false;
+    }
+  }
+#endif
+
 
     if (!relocate( lookup_list)) {
+        return false;
     }
     DEBUG("[ finished linking %s ]", get_realpath());
+
 #if !defined(__LP64__)
     if (has_text_relocations) {
         // All relocations are done, we can protect our segments back to read-only.
@@ -672,6 +702,9 @@ void soinfo::link_image(SymbolLookupList& lookup_list) {
     }
 #endif
 
+
+
+    return true;
 
 }
 

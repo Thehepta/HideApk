@@ -13,7 +13,7 @@
 typedef void (*linker_dtor_function_t)();
 typedef void (*linker_ctor_function_t)(int, char**, char**);
 
-//ElfW(Addr) call_ifunc_resolver(ElfW(Addr) resolver_addr);
+extern ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr);
 
 
 #define SUPPORTED_DT_FLAGS_1 (DF_1_NOW | DF_1_GLOBAL | DF_1_NODELETE | DF_1_PIE)
@@ -111,11 +111,11 @@ private:
 #endif
 
 #if defined(USE_RELA)
-    ElfW(Rela)* plt_rela_;
-    size_t plt_rela_count_;
+    ElfW(Rela)* plt_rela_;  //指的的是 .rela.plt    通过 readelf -r adrif.so
+    size_t plt_rela_count_; //指的的是 .rela.plt 有多少个
 
-    ElfW(Rela)* rela_;
-    size_t rela_count_;
+    ElfW(Rela)* rela_;   //指的的是 .rela.dyn    通过 readelf -r adrif.so
+    size_t rela_count_;  //指的的是 .rela.dyn 有多少个
 #else
     ElfW(Rel)* plt_rel_;
     size_t plt_rel_count_;
@@ -166,7 +166,7 @@ public:
     void call_destructors();
     void call_pre_init_constructors();
     bool prelink_image();
-    void link_image(SymbolLookupList& lookup_list);
+    bool link_image(SymbolLookupList& lookup_list);
 
     bool protect_relro();
 
@@ -192,8 +192,7 @@ public:
 
     ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
         if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
-//            return call_ifunc_resolver(s->st_value + load_bias);
-            return NULL;
+            return call_ifunc_resolver(s->st_value + load_bias);
         }
 
         return static_cast<ElfW(Addr)>(s->st_value + load_bias);

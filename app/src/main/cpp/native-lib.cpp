@@ -67,6 +67,7 @@ uint8_t *create_ashmem_fd(int size){
 }
 
 
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_hideApk(JNIEnv *env, jobject thiz, jstring s) {

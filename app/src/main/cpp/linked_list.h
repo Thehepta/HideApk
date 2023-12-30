@@ -16,23 +16,39 @@ struct LinkedListEntry {
 template<typename T, typename Allocator>
 class LinkedList {
     struct LinkedListHeader {
-              LinkedListEntry<T>* head;
-              LinkedListEntry<T>* tail;
+        LinkedListEntry<T>* head;
+        LinkedListEntry<T>* tail;
     };
 public:
-    template<typename F>
-    T* find_if(F predicate) const {
+//    template<typename F>
+//    T* find_if(F predicate) const {
 //        for (LinkedListEntry<T>* e = head_; e != nullptr; e = e->next) {
 //            if (predicate(e->element)) {
 //                return e->element;
 //            }
 //        }
+//
+//        return nullptr;
+//    }
+
+
+    template<typename F>
+    T* find_if(F predicate) const {
+        for (LinkedListEntry<T>* e = head(); e != nullptr; e = e->next) {
+            if (predicate(e->element)) {
+                return e->element;
+            }
+        }
 
         return nullptr;
     }
-
 private:
-    LinkedListHeader* head_;
+
+    LinkedListEntry<T>* head() const {
+              return header_ != nullptr ? header_->head : nullptr;
+            }
+
+    LinkedListHeader* header_;
 //    LinkedListEntry<T>* tail_;
 };
 

@@ -44,9 +44,9 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         try {
 
-                            ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
+                            ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
                             PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
-                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.adirf.LoadEntry");
+                            Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.fridaload.LoadEntry");
 
                             Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
                             method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 ApplicationInfo applicationInfo = null;
                 try {
-                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.adirf", 0);
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }

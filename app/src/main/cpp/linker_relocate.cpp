@@ -68,41 +68,42 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
 //    const SymbolLookupLib* end = lookup_list.end();
 //    const SymbolLookupLib* it = lookup_list.begin();
 
+    auto it =     lookup_list.getVectorSymLib().begin();
+    auto end = lookup_list.getVectorSymLib().end();
     while (true) {
         uint32_t sym_idx;
 
         // Iterate over libraries until we find one whose Bloom filter matches the symbol we're
         // searching for.
 
-        SymbolLookupLib  lib ;
+        std::vector<SymbolLookupLib>::iterator  lib ;
         const std::vector<SymbolLookupLib> vector =  lookup_list.getVectorSymLib();
         ;
-//        for (auto it = vector.begin() ; it != vector.end(); it++) {
-        for (int i = 0; i < vector.size(); ++i) {
-
-            lib = vector[i];
-            if (IsGeneral && lib.needs_sysv_lookup()) {
-                if (const ElfW(Sym)* sym = lib.si_->find_symbol_by_name(elf_symbol_name, vi)) {
-                    *si_found_in = lib.si_;
+        while (true) {
+            if (it == end) return nullptr;
+            lib = it++;
+            if (IsGeneral && lib->needs_sysv_lookup()) {
+                if (const ElfW(Sym)* sym = lib->si_->find_symbol_by_name(elf_symbol_name, vi)) {
+                    *si_found_in = lib->si_;
                     return sym;
                 }
                 continue;
             }
             if (IsGeneral) {
-                LOGE( "SEARCH %s in %s@%p (gnu)",name, lib.si_->get_realpath(), reinterpret_cast<void*>(lib.si_->base));
+                LOGE( "SEARCH %s in %s@%p (gnu)",name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
             }
-            const uint32_t word_num = (hash / kBloomMaskBits) & lib.gnu_maskwords_;
-            const ElfW(Addr) bloom_word = lib.gnu_bloom_filter_[word_num];
+            const uint32_t word_num = (hash / kBloomMaskBits) & lib->gnu_maskwords_;
+            const ElfW(Addr) bloom_word = lib->gnu_bloom_filter_[word_num];
             const uint32_t h1 = hash % kBloomMaskBits;
-            const uint32_t h2 = (hash >> lib.gnu_shift2_) % kBloomMaskBits;
+            const uint32_t h2 = (hash >> lib->gnu_shift2_) % kBloomMaskBits;
             if ((1 & (bloom_word >> h1) & (bloom_word >> h2)) == 1) {
-                sym_idx = lib.gnu_bucket_[hash % lib.gnu_nbucket_];
+                sym_idx = lib->gnu_bucket_[hash % lib->gnu_nbucket_];
                 if (sym_idx != 0) {
                     break;
                 }
             }
             if (IsGeneral) {
-                LOGE( "NOT FOUND %s in %s@%p",name, lib.si_->get_realpath(), reinterpret_cast<void*>(lib.si_->base));
+                LOGE( "NOT FOUND %s in %s@%p",name, lib->si_->get_realpath(), reinterpret_cast<void*>(lib->si_->base));
             }
         }
 
@@ -114,18 +115,18 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
         const ElfW(Sym)* sym = nullptr;
 
         do {
-            sym = lib.symtab_ + sym_idx;
-            chain_value = lib.gnu_chain_[sym_idx];
+            sym = lib->symtab_ + sym_idx;
+            chain_value = lib->gnu_chain_[sym_idx];
             if ((chain_value >> 1) == (hash >> 1)) {
                 if (vi != nullptr && !calculated_verneed) {
                     calculated_verneed = true;
-                    verneed = find_verdef_version_index(lib.si_, vi);
+                    verneed = find_verdef_version_index(lib->si_, vi);
                 }
-                if (check_symbol_version(lib.versym_, sym_idx, verneed) &&
-                    static_cast<size_t>(sym->st_name) + name_len + 1 <= lib.strtab_size_ &&
-                    memcmp(lib.strtab_ + sym->st_name, name, name_len + 1) == 0 &&
-                    is_symbol_global_and_defined(lib.si_, sym)) {
-                    *si_found_in = lib.si_;
+                if (check_symbol_version(lib->versym_, sym_idx, verneed) &&
+                    static_cast<size_t>(sym->st_name) + name_len + 1 <= lib->strtab_size_ &&
+                    memcmp(lib->strtab_ + sym->st_name, name, name_len + 1) == 0 &&
+                    is_symbol_global_and_defined(lib->si_, sym)) {
+                    *si_found_in = lib->si_;
 //                    if (IsGeneral) {
 //                        TRACE_TYPE(LOOKUP, "FOUND %s in %s (%p) %zd",
 //                                   name, lib->si_->get_realpath(), reinterpret_cast<void*>(sym->st_value),
@@ -239,9 +240,13 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
     const ElfW(Sym)* sym = nullptr;
     const char* sym_name = nullptr;
     ElfW(Addr) sym_addr = 0;
-
+    LOGE("entry process_relocation_impl fun");
     if (r_sym != 0) {
         sym_name = relocator.get_string(relocator.si_symtab[r_sym].st_name);
+        if(strcmp("strcmp",sym_name)==0){
+            LOGE("debug symbol strcmp");
+
+        }
     }
 
     // While relocating a DSO with text relocations (obsolete and 32-bit only), the .text segment is
@@ -286,6 +291,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
 
     if (IsGeneral) {
         if (r_sym == 0) {
+            TRACECODE("");
             // By convention in ld.bfd and lld, an omitted symbol on a TLS relocation
             // is a reference to the current module.
             found_in = relocator.si;
@@ -301,6 +307,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
                    sym_name, relocator.si->get_realpath(), ELF_ST_TYPE(sym->st_info), r_type);
             return false;
         } else if (!lookup_symbol<IsGeneral>(relocator, r_sym, sym_name, &found_in, &sym)) {
+            TRACECODE("");
             return false;
         }
         if (found_in != nullptr ) {
@@ -318,11 +325,15 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             }
             sym_addr = sym->st_value;
         }
+        TRACECODE("");
     } else {
         if (r_sym == 0) {
             // Do nothing.
         } else {
-            if (!lookup_symbol<IsGeneral>(relocator, r_sym, sym_name, &found_in, &sym)) return false;
+            if (!lookup_symbol<IsGeneral>(relocator, r_sym, sym_name, &found_in, &sym)){
+                TRACECODE("");
+                return false;
+            }
             if (sym != nullptr) {
                 const bool should_protect_segments = handle_text_relocs &&
                                                      found_in == relocator.si &&
@@ -365,8 +376,8 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
         if (r_type == R_GENERIC_ABSOLUTE) {
             count_relocation_if<IsGeneral>(kRelocAbsolute);
             const ElfW(Addr) result = sym_addr + get_addend_rel();
-            LOGE("RELO ABSOLUTE %16p <- %16p %s",
-                 rel_target, reinterpret_cast<void*>(result), sym_name);
+//            LOGE("RELO ABSOLUTE %16p <- %16p %s",
+//                 rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         } else if (r_type == R_GENERIC_GLOB_DAT) {
@@ -395,6 +406,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
         // Almost all relocations are handled above. Handle the remaining relocations below, in a
         // separate function call. The symbol lookup will be repeated, but the result should be served
         // from the 1-symbol lookup cache.
+        TRACECODE("");
         return process_relocation_general(relocator, reloc);
     }
 
@@ -466,6 +478,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             DL_ERR("unknown reloc type %d in \"%s\"", r_type, relocator.si->get_realpath());
             return false;
     }
+    TRACECODE("");
     return true;
 }
 
@@ -503,7 +516,12 @@ __attribute__((noinline))
 static bool plain_relocate_impl(Relocator& relocator, rel_t* rels, size_t rel_count) {
     for (size_t i = 0; i < rel_count; ++i) {
         if (!process_relocation<Mode>(relocator, rels[i])) {
+            LOGE("rel_count = %d",i);
             return false;
+        }
+        LOGE("rel_count = %d",i);
+        if(i==65361){
+            LOGE("rel_count = %d",i);
         }
     }
     return true;
