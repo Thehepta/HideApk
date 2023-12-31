@@ -14,6 +14,7 @@
 #include "linker_phdr.h"
 #include "linker_soinfo.h"
 #include<unordered_map>
+#include <jni.h>
 
 
 #if defined(__LP64__)
@@ -64,7 +65,7 @@ struct ApkNativeInfo {
 void* LoadNativeSoByMem(uint8_t * soArrayMem,int length);
 
 uint8_t * Creatememfd(int fd, int size);
-bool LoadApkModule(char * apkSource);
+bool LoadApkModule(JNIEnv *env,char * apkSource);
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 

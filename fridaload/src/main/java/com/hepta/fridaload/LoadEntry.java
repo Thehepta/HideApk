@@ -4,10 +4,10 @@ import android.content.Context;
 
 public class LoadEntry {
 
-    static {
-
-        System.loadLibrary("nativetext");
-    }
+//    static {
+//
+//        System.loadLibrary("nativetext");
+//    }
 
     public static void Entry(Context context , String source){
         LoadSo(context,source);

@@ -17,7 +17,6 @@
 #include <sys/utsname.h>
 
 
-
 android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(resolve_elf_internal_symbol(get_android_linker_path(), "__dl_g_default_namespace"));
 
 soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) resolve_elf_internal_symbol(get_android_linker_path(),"__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
@@ -298,11 +297,65 @@ void LoadTask::init_call() {
     get_soinfo()->call_constructors();
 }
 
+//void load_dex(JNIEnv *pEnv) {
+//    jobjectArray JAAR = nullptr;
+//    auto classloader = pEnv->FindClass("java/lang/ClassLoader");
+//    auto getsyscl_mid = pEnv->GetStaticMethodID(classloader, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+//    auto sys_classloader = pEnv->CallStaticObjectMethod(classloader, getsyscl_mid);
+//    jmethodID method_loadClass = pEnv->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+//
+//    if (!sys_classloader){
+//        LOGE("getSystemClassLoader failed!!!");
+//        return;
+//    }
+//    auto in_memory_classloader = pEnv->FindClass( "dalvik/system/InMemoryDexClassLoader");
+//    auto initMid = pEnv->GetMethodID( in_memory_classloader, "<init>",
+//                                      "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
+//    auto byte_buffer_class = pEnv->FindClass("java/nio/ByteBuffer");
+//    auto dex_buffer = pEnv->NewDirectByteBuffer(dex_addr, dex_size);
+//    if (auto my_cl = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, sys_classloader)) {
+//        jobject  sand_class_loader_ = pEnv->NewGlobalRef( my_cl);
+//
+//        jstring xposed = pEnv->NewStringUTF("com.rxposed.sandhooktextapp.XposedTest");
+//        jobject XposedTest = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,xposed);
+//
+//        jclass Class_cls = pEnv->FindClass("java/lang/Class");
+//        jmethodID clsmethod_method = pEnv->GetMethodID(Class_cls,"getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
+//        jclass Method_cls = pEnv->FindClass("java/lang/reflect/Method");
+//        jmethodID invoke_met =  pEnv->GetMethodID(Method_cls,"invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+//
+//        jobject user_metohd = nullptr;
+//        jstring  call_method_name = pEnv->NewStringUTF("native_hook");
+//        user_metohd = pEnv->CallObjectMethod(XposedTest, clsmethod_method,call_method_name,JAAR);
+//        pEnv->CallObjectMethod(user_metohd, invoke_met,XposedTest,JAAR);
+//
+//    } else {
+//        LOGE("InMemoryDexClassLoader creation failed!!!");
+//        return;
+//    }
+//}
 
 
 
+bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
 
-bool LoadApkModule(char * apkSource){
+
+
+    jobjectArray JAAR = nullptr;
+    jobject currentDexLoad = nullptr;
+    auto classloader = pEnv->FindClass("java/lang/ClassLoader");
+    auto getsyscl_mid = pEnv->GetStaticMethodID(classloader, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+    auto sys_classloader = pEnv->CallStaticObjectMethod(classloader, getsyscl_mid);
+    jmethodID method_loadClass = pEnv->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+
+    if (!sys_classloader){
+        LOGE("getSystemClassLoader failed!!!");
+        return false;
+    }
+    auto in_memory_classloader = pEnv->FindClass( "dalvik/system/InMemoryDexClassLoader");
+    auto initMid = pEnv->GetMethodID( in_memory_classloader, "<init>","(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
+    auto byte_buffer_class = pEnv->FindClass("java/nio/ByteBuffer");
+
 
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     std::vector<LoadTask*> load_tasks;
@@ -359,20 +412,19 @@ bool LoadApkModule(char * apkSource){
                 mz_zip_reader_end(&zip_archive);
                 return false;
             }
-            load_dexs.push_back(file_data);
+            auto dex_buffer = pEnv->NewDirectByteBuffer(file_data, file_stat.m_uncomp_size);
+            if (currentDexLoad == nullptr ) {
+                currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, sys_classloader);
+            } else {
+                currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, currentDexLoad);
+            }
+
         }
     }
     mz_zip_reader_end(&zip_archive);
 
 
-    for (size_t i = 0; i<load_dexs.size(); ++i) {
-
-    }
-
-
-
-
-        linker_protect();
+    linker_protect();
 
     for (size_t i = 0; i<load_tasks.size(); ++i) {
 
@@ -405,6 +457,18 @@ bool LoadApkModule(char * apkSource){
     }
 
     linker_unprotect();
+
+
+    if (currentDexLoad != nullptr ) {
+        jobject  sand_class_loader_ = pEnv->NewGlobalRef( currentDexLoad);
+
+        jstring LoadEntry_cls = pEnv->NewStringUTF("com.hepta.fridaload.LoadEntry");
+        jobject LoadEntrycls_obj = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,LoadEntry_cls);
+        jmethodID call_method_mth = pEnv->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
+        jstring aerg = pEnv->NewStringUTF("test load hiedapk");
+        pEnv->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_method_mth,aerg);
+    }
+
     return true;
 
 }

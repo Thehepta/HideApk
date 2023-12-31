@@ -23,7 +23,8 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
 //                        LoadEntry.Entry(getApplicationContext(),getApplicationInfo().sourceDir);
-                        System.loadLibrary("frida-gadget");
+//                        System.loadLibrary("frida-gadget");
+                        LoadEntry.text("rerewrewrew");
                     }
                 }.start();
             }
