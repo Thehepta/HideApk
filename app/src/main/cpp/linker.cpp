@@ -289,15 +289,24 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
     get_soinfo()->set_dt_flags_1(get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
     get_soinfo()->link_image(lookup_list);
 
+
+}
+
+void LoadTask::init_call() {
+
     get_soinfo()->set_linked();
     get_soinfo()->call_constructors();
 }
+
+
+
+
 
 bool LoadApkModule(char * apkSource){
 
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     std::vector<LoadTask*> load_tasks;
-
+    std::vector<uint8_t*> load_dexs;
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
 
@@ -337,12 +346,33 @@ bool LoadApkModule(char * apkSource){
             load_tasks.push_back(task);
 //            printf("Filename: \"%s\", Comment: \"%s\", Uncompressed size: %llu\n",file_stat.m_filename, file_stat.m_comment ? file_stat.m_comment : "",(mz_uint64) file_stat.m_uncomp_size);
         }
+        if(strstr(file_stat.m_filename, ".dex") != NULL){
+            uint8_t *file_data = (unsigned char *)malloc(file_stat.m_uncomp_size);
+            if (!file_data) {
+                printf("Memory allocation failed\n");
+                mz_zip_reader_end(&zip_archive);
+                return false;
+            }
+            if (!mz_zip_reader_extract_to_mem(&zip_archive, i, file_data, file_stat.m_uncomp_size, 0)) {
+                printf("Failed to extract file\n");
+                free(file_data);
+                mz_zip_reader_end(&zip_archive);
+                return false;
+            }
+            load_dexs.push_back(file_data);
+        }
     }
     mz_zip_reader_end(&zip_archive);
 
 
-    linker_protect();
+    for (size_t i = 0; i<load_dexs.size(); ++i) {
 
+    }
+
+
+
+
+        linker_protect();
 
     for (size_t i = 0; i<load_tasks.size(); ++i) {
 

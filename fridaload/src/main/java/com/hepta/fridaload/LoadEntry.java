@@ -4,7 +4,10 @@ import android.content.Context;
 
 public class LoadEntry {
 
+    static {
 
+        System.loadLibrary("nativetext");
+    }
 
     public static void Entry(Context context , String source){
         LoadSo(context,source);
@@ -21,5 +24,6 @@ public class LoadEntry {
         System.load(str);
     }
 
+    public  static native void text(String str);
 
 }

@@ -16,6 +16,7 @@ import com.hepta.hideapk.databinding.ActivityMainBinding;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
 public class MainActivity extends AppCompatActivity {
@@ -47,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
                             ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
                             PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
                             Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.fridaload.LoadEntry");
-
                             Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
                             method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
                             Log.e("Rzx",applicationInfo.sourceDir);

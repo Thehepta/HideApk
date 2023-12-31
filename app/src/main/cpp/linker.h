@@ -211,6 +211,7 @@ public:
     }
 
     void soload(std::vector<LoadTask*> &load_tasks);
+    void init_call();
 
 private:
 

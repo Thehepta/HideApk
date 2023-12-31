@@ -671,7 +671,7 @@ bool soinfo::link_image(SymbolLookupList& lookup_list) {
 #if !defined(__LP64__)
     if (has_text_relocations) {
     // Fail if app is targeting M or above.
-    int app_target_api_level = get_application_target_sdk_version();
+    int app_target_api_level = android_get_application_target_sdk_version();
     if (app_target_api_level >= 23) {
       DL_ERR_AND_LOG("\"%s\" has text relocations (https://android.googlesource.com/platform/"
                      "bionic/+/master/android-changes-for-ndk-developers.md#Text-Relocations-"
@@ -697,7 +697,7 @@ bool soinfo::link_image(SymbolLookupList& lookup_list) {
         if (phdr_table_protect_segments(phdr, phnum, load_bias) < 0) {
             DL_ERR("can't protect segments for \"%s\": %s",
                    get_realpath(), strerror(errno));
-            return;
+            return false;
         }
     }
 #endif
