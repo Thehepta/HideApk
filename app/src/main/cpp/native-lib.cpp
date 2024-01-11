@@ -78,7 +78,7 @@ uint8_t *create_ashmem_fd(int size){
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_hepta_hideapk_MainActivity_hideApk(JNIEnv *env, jobject thiz, jstring s) {
+Java_com_hepta_hideapk_MainActivity_customhideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
 
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
 
@@ -122,4 +122,11 @@ Java_com_hepta_hideapk_MainActivity_soglobal(JNIEnv *env, jobject thiz, jstring 
 __attribute__((constructor)) static void beforeFunction()
 {
     LOGE("beforeFunction\n");
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_customhideSoLoad(JNIEnv *env, jobject thiz,
+                                                     jstring libname_path) {
+    // TODO: implement customhideSoLoad()
 }

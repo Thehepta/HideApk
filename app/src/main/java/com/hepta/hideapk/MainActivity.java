@@ -9,17 +9,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 
 import com.hepta.hideapk.databinding.ActivityMainBinding;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
 public class MainActivity extends AppCompatActivity {
+
 
     // Used to load the 'hideapk' library on application startup.
     static {
@@ -36,8 +35,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         // Example of a call to a native method
-        Button tv = binding.LoadApk;
-        tv.setOnClickListener(new View.OnClickListener() {
+        Button LoadApkBtn = binding.LoadApk;
+        LoadApkBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 new Thread(){
@@ -68,24 +67,33 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        Button btn2 = binding.LoadSo;
-        btn2.setOnClickListener(new View.OnClickListener() {
+        Button hideLoadApkBtn = binding.HideLoadApk;
+        hideLoadApkBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View view) {
+                Log.e("rzx","hideLoadApkBtn");
                 ApplicationInfo applicationInfo = null;
                 try {
                     applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                hideApk(applicationInfo.sourceDir);
+                customhideApkLoad(applicationInfo.sourceDir);
+            }
+        });
 
+        Button hideLoadSoBtn = binding.HideLoadSo;
+        hideLoadSoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e("rzx","hideLoadSoBtn");
 //                hideApk("com.hepta.adirf");
             }
         });
     }
 
-    private native void hideApk(String s);
+    private native void customhideApkLoad(String s);
+    private native void customhideSoLoad(String libnamePath);
 
     /**
      * A native method that is implemented by the 'hideapk' native library,

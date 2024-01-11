@@ -11,6 +11,19 @@ Java_com_hepta_fridaload_LoadEntry_text(JNIEnv *env, jclass clazz, jstring str) 
     LOGE("TEXT:%s",string);
 }
 
+
+
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+    JNIEnv* env;
+    if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+        return -1;
+    }
+
+    // 在这里进行一些初始化工作
+
+    return JNI_VERSION_1_6;
+}
+
 //void load_dex(JNIEnv *pEnv) {
 //    LOGD("load_dex\n");
 //    jobjectArray JAAR = nullptr;

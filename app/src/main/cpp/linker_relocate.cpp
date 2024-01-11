@@ -240,7 +240,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
     const ElfW(Sym)* sym = nullptr;
     const char* sym_name = nullptr;
     ElfW(Addr) sym_addr = 0;
-    LOGE("entry process_relocation_impl fun");
+//    LOGE("entry process_relocation_impl fun");
     if (r_sym != 0) {
         sym_name = relocator.get_string(relocator.si_symtab[r_sym].st_name);
         if(strcmp("strcmp",sym_name)==0){
@@ -363,7 +363,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
         if (r_type == R_GENERIC_JUMP_SLOT) {
             count_relocation_if<IsGeneral>(kRelocAbsolute);
             const ElfW(Addr) result = sym_addr + get_addend_norel();
-            LOGE("RELO JMP_SLOT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
+//            LOGE("RELO JMP_SLOT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         }
@@ -386,8 +386,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             // it.
             count_relocation_if<IsGeneral>(kRelocAbsolute);
             const ElfW(Addr) result = sym_addr + get_addend_norel();
-            LOGE("RELO GLOB_DAT %16p <- %16p %s",
-                 rel_target, reinterpret_cast<void*>(result), sym_name);
+//            LOGE("RELO GLOB_DAT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         } else if (r_type == R_GENERIC_RELATIVE) {
@@ -395,8 +394,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             // referenced symbol (and abort if the symbol isn't found), even though it isn't used.
             count_relocation_if<IsGeneral>(kRelocRelative);
             const ElfW(Addr) result = relocator.si->load_bias + get_addend_rel();
-            LOGE("RELO RELATIVE %16p <- %16p",
-                 rel_target, reinterpret_cast<void*>(result));
+//            LOGE("RELO RELATIVE %16p <- %16p",rel_target, reinterpret_cast<void*>(result));
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         }
@@ -516,13 +514,12 @@ __attribute__((noinline))
 static bool plain_relocate_impl(Relocator& relocator, rel_t* rels, size_t rel_count) {
     for (size_t i = 0; i < rel_count; ++i) {
         if (!process_relocation<Mode>(relocator, rels[i])) {
-            LOGE("rel_count = %d",i);
             return false;
         }
-        LOGE("rel_count = %d",i);
-        if(i==65361){
-            LOGE("rel_count = %d",i);
-        }
+//        LOGE("rel_count = %d",i);  TEST
+//        if(i==65361){
+//            LOGE("rel_count = %d",i);
+//        }
     }
     return true;
 }

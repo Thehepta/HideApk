@@ -461,7 +461,6 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
 
     if (currentDexLoad != nullptr ) {
         jobject  sand_class_loader_ = pEnv->NewGlobalRef( currentDexLoad);
-
         jstring LoadEntry_cls = pEnv->NewStringUTF("com.hepta.fridaload.LoadEntry");
         jobject LoadEntrycls_obj = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,LoadEntry_cls);
         jmethodID call_method_mth = pEnv->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
