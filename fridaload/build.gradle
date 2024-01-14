@@ -41,6 +41,14 @@ android {
         }
     }
 
+    packagingOptions {
+        exclude 'lib/arm64-v8a/liblog.so'
+        exclude 'lib/armeabi-v7a/liblog.so'
+        exclude 'lib/arm64-v8a/libfrida-gadget.so'
+        exclude 'lib/armeabi-v7a/libfrida-gadget.so'
+    }
+
+
 }
 
 dependencies {

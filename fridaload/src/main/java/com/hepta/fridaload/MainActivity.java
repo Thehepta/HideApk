@@ -8,7 +8,10 @@ import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
 
+    static {
 
+        System.loadLibrary("nativetext");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

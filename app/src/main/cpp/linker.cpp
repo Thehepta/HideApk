@@ -46,7 +46,7 @@ soinfo* find_system_library_byname(const char* soname) {
     for (soinfo* si = solist_get_head(); si != nullptr; si = si->next) {
         char* ret_name = soinfo_get_soname(si);
         if(ret_name!= nullptr){
-            LOGE("get_soname : %s",ret_name);
+//            LOGE("get_soname : %s",ret_name);
             if(0 == strncmp(ret_name,soname, strlen(soname))) {
                 return si;
             }
@@ -231,7 +231,7 @@ soinfo* find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
     }
     if(find_soinfo != nullptr) {
         if(find_soinfo->get_soinfo()->is_linked()){
-            find_soinfo->soload(load_tasks);
+            find_soinfo->soload(load_tasks, nullptr);
         }
         return find_soinfo->get_soinfo();
 
@@ -271,13 +271,14 @@ static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
 }
 
 
-void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
+void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
 
     SymbolLookupList lookup_list;
 
     for_each_dt_needed(get_elf_reader(), [&](const char* name) {
         LOGE("NEED name: %s",name);
         soinfo* si = find_library(load_tasks, name);
+//        get_soinfo()->add_child(si);
         SymbolLookupLib SyLib = si->get_lookup_lib();
         lookup_list.addSymbolLib(SyLib);
     });
@@ -286,15 +287,40 @@ void LoadTask::soload(std::vector<LoadTask*> &load_tasks) {
     load(&default_params);
     get_soinfo()->prelink_image();
     get_soinfo()->set_dt_flags_1(get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
+    lookup_list.addSymbolLib(get_soinfo()->get_lookup_lib());
     get_soinfo()->link_image(lookup_list);
-
+    get_soinfo()->set_linked();
+    get_soinfo()->call_constructors();
+    init_call(pEnv);
 
 }
 
-void LoadTask::init_call() {
+bool do_dlsym(soinfo* si,const char* sym_name,void** symbol){
 
-    get_soinfo()->set_linked();
-    get_soinfo()->call_constructors();
+    const char* sym_ver= nullptr;
+    version_info vi_instance;
+    version_info* vi = nullptr;
+}
+
+void LoadTask::init_call(JNIEnv *pEnv) {
+
+//    get_soinfo()->set_linked();
+//    get_soinfo()->call_constructors();
+    SymbolName symbol_JNI_OnLoad("JNI_OnLoad");
+    const ElfW(Sym)* sym = get_soinfo()->find_symbol_by_name(symbol_JNI_OnLoad, nullptr);
+//    int(*JNI_OnLoadFn)(JavaVM*, void*) = nullptr;
+    if(sym== nullptr){
+        return;
+    }
+    int(*JNI_OnLoadFn)(JavaVM*, void*) = ( int(*)(JavaVM*, void*))(sym->st_value+get_soinfo()->load_bias);
+
+    JavaVM *vm;
+    pEnv->GetJavaVM(&vm);
+    JNIEnv* env;
+    if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+        return ;
+    }
+    JNI_OnLoadFn(vm, nullptr);
 }
 
 //void load_dex(JNIEnv *pEnv) {
@@ -453,7 +479,7 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
 
 
     for (auto&& task : load_tasks) {
-        task->soload(load_tasks);
+        task->soload(load_tasks, pEnv);
     }
 
     linker_unprotect();

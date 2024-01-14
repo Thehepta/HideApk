@@ -192,10 +192,10 @@ inline bool lookup_symbol(Relocator& relocator, uint32_t r_sym, const char* sym_
 
 
 bool needs_slow_relocate_loop(const Relocator& relocator __unused) {
-//#if STATS
-//    // TODO: This could become a run-time flag.
-//  return true;
-//#endif
+#if STATS
+    // TODO: This could become a run-time flag.
+  return true;
+#endif
 #if !defined(__LP64__)
     if (relocator.si->has_text_relocations) return true;
 #endif
@@ -363,7 +363,7 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
         if (r_type == R_GENERIC_JUMP_SLOT) {
             count_relocation_if<IsGeneral>(kRelocAbsolute);
             const ElfW(Addr) result = sym_addr + get_addend_norel();
-//            LOGE("RELO JMP_SLOT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
+            LOGE("RELO JMP_SLOT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
         }
@@ -516,7 +516,7 @@ static bool plain_relocate_impl(Relocator& relocator, rel_t* rels, size_t rel_co
         if (!process_relocation<Mode>(relocator, rels[i])) {
             return false;
         }
-//        LOGE("rel_count = %d",i);  TEST
+//        LOGE("rel_count = %d",i);  //TEST
 //        if(i==65361){
 //            LOGE("rel_count = %d",i);
 //        }
@@ -545,7 +545,7 @@ bool packed_relocate(Relocator& relocator, Args ...args) {
 bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
     VersionTracker version_tracker;
-    if (!version_tracker.init(this)) {
+    if (!version_tracker.init(this, lookup_list)) {
         return false;
     }
 

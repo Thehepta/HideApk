@@ -20,7 +20,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     }
 
     // 在这里进行一些初始化工作
-
+    LOGE("TEXT:%s","JNI_OnLoad");
     return JNI_VERSION_1_6;
 }
 

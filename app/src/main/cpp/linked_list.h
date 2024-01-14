@@ -42,11 +42,36 @@ public:
 
         return nullptr;
     }
+
+//    void push_back(T* const element) {
+//        alloc_header();
+//        LinkedListEntry<T>* new_entry = Allocator::alloc();
+//        new_entry->next = nullptr;
+//        new_entry->element = element;
+//        if (header_->tail == nullptr) {
+//            header_->tail = header_->head = new_entry;
+//        } else {
+//            header_->tail->next = new_entry;
+//            header_->tail = new_entry;
+//        }
+//    }
+
+
+
+
 private:
 
+//    void alloc_header() {
+//        if (header_ == nullptr) {
+//            header_ = reinterpret_cast<LinkedListHeader*>(Allocator::alloc());
+//            header_->head = header_->tail = nullptr;
+//        }
+//    }
+
+
     LinkedListEntry<T>* head() const {
-              return header_ != nullptr ? header_->head : nullptr;
-            }
+        return header_ != nullptr ? header_->head : nullptr;
+    }
 
     LinkedListHeader* header_;
 //    LinkedListEntry<T>* tail_;

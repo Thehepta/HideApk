@@ -979,6 +979,13 @@ const ElfW(Sym)* soinfo::elf_lookup(SymbolName& symbol_name, const version_info*
     return nullptr;
 }
 
+void soinfo::add_child(soinfo *child) {
+    if (has_min_version(0)) {
+//        child->parents_.push_back(this);
+//        this->children_.push_back(child);
+    }
+}
+
 
 uint32_t calculate_elf_hash(const char* name) {
     const uint8_t* name_bytes = reinterpret_cast<const uint8_t*>(name);

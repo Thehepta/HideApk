@@ -211,12 +211,12 @@ public:
         return needed_by_;
     }
 
-    void soload(std::vector<LoadTask*> &load_tasks);
-    void init_call();
+    void soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv);
+    void init_call(JNIEnv *pEnv);
 
 private:
 
-    const char* name_;
+    std::string name_;
     soinfo* needed_by_;
     soinfo* si_;
     const android_dlextinfo* extinfo_;
@@ -234,7 +234,38 @@ private:
 
 };
 
+struct linker_JNIEnv:public _JNIEnv{
 
+    JNIEnv * old_pEnv;
+    linker_JNIEnv(JNIEnv *pEnv){
+        old_pEnv = pEnv;
+    }
+
+
+    jint GetVersion()
+    { return functions->GetVersion(this); }
+
+    jclass FindClass(const char* name)
+    { return functions->FindClass(this, name); }
+
+};
+
+
+struct linker_JavaVM:public _JavaVM{
+
+
+    linker_JNIEnv * old_env;
+    JavaVM *old_vm;
+    linker_JavaVM(JavaVM *vm){
+        old_vm = vm;
+    }
+    jint GetEnv(void** env, jint version){
+
+        int re =functions->GetEnv(this, reinterpret_cast<void **>(&old_env), version);
+        *env = old_env;
+        return re;
+    }
+};
 
 
 

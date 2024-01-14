@@ -87,12 +87,12 @@ ElfW(Versym) find_verdef_version_index(const soinfo* si, const version_info* vi)
 
 
 
-bool VersionTracker::init(const soinfo* si_from) {
+bool VersionTracker::init(const soinfo *si_from, const SymbolLookupList &list) {
     if (!si_from->has_min_version(2)) {
         return true;
     }
 
-    return init_verneed(si_from) && init_verdef(si_from);
+    return init_verneed(si_from, list) && init_verdef(si_from);
 }
 
 
@@ -108,7 +108,7 @@ bool VersionTracker::init_verdef(const soinfo* si_from) {
 
 
 
-bool VersionTracker::init_verneed(const soinfo* si_from) {
+bool VersionTracker::init_verneed(const soinfo *si_from,  SymbolLookupList list) {
     uintptr_t verneed_ptr = si_from->get_verneed_ptr();
 
     if (verneed_ptr == 0) {
@@ -128,10 +128,18 @@ bool VersionTracker::init_verneed(const soinfo* si_from) {
         }
 
         const char* target_soname = si_from->get_string(verneed->vn_file);
-        // find it in dependencies
-        soinfo* target_si = si_from->get_children().find_if([&](const soinfo* si) {
-            return si->get_soname() != nullptr && strcmp(si->get_soname(), target_soname) == 0;
-        });
+//        // find it in dependencies
+//        soinfo* target_si = si_from->get_children().find_if([&](const soinfo* si) {
+//            return si->get_soname() != nullptr && strcmp(si->get_soname(), target_soname) == 0;
+//        });
+        soinfo* target_si = nullptr;
+        std::vector<SymbolLookupLib>::iterator iter;
+        for (iter = list.getVectorSymLib().begin(); iter != list.getVectorSymLib().end(); iter++) {
+            if(iter->si_->get_soname()!= nullptr&& strcmp(iter->si_->get_soname(), target_soname) == 0){
+                target_si = iter->si_ ;
+                break;
+            }
+        }
 
         if (target_si == nullptr) {
             DL_ERR("cannot find \"%s\" from verneed[%zd] in DT_NEEDED list for \"%s\"",
