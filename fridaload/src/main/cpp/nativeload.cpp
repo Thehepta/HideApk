@@ -1,6 +1,5 @@
-#include <jni.h>
 #include <android/log.h>
-
+#include "jni_hook.h"
 #define LOG_TAG "Native"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
@@ -12,13 +11,20 @@ Java_com_hepta_fridaload_LoadEntry_text(JNIEnv *env, jclass clazz, jstring str) 
 }
 
 
-
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    JNIEnv* env;
-    if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
-        return -1;
-    }
 
+    JavaVM * replace_vm = jni_hook_init(vm);
+
+    JNIEnv* env;
+//    if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
+//        return -1;
+//    }
+
+    replace_vm->functions->GetEnv(replace_vm, reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+
+//    linker_JNIEnv *linkerJniEnv = new linker_JNIEnv(env);
+//
+//    linkerJniEnv->FindClass("java/lang/Runnable");
     // 在这里进行一些初始化工作
     LOGE("TEXT:%s","JNI_OnLoad");
     return JNI_VERSION_1_6;

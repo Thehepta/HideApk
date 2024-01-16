@@ -15,7 +15,7 @@
 #include "linker_debug.h"
 #include <sys/syscall.h>
 #include <sys/utsname.h>
-
+#include "jni_hook.h"
 
 android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(resolve_elf_internal_symbol(get_android_linker_path(), "__dl_g_default_namespace"));
 
@@ -301,26 +301,27 @@ bool do_dlsym(soinfo* si,const char* sym_name,void** symbol){
     version_info vi_instance;
     version_info* vi = nullptr;
 }
+jclass  (*FindClass_Old)(JNIEnv*, const char*) = nullptr;
+jclass  FindClass_Hook(JNIEnv*env, const char*ptr){
 
+    LOGE("TEXT:%s","FindClass_Hook");
+    return FindClass_Old(env,ptr);
+}
 void LoadTask::init_call(JNIEnv *pEnv) {
 
-//    get_soinfo()->set_linked();
-//    get_soinfo()->call_constructors();
+
     SymbolName symbol_JNI_OnLoad("JNI_OnLoad");
     const ElfW(Sym)* sym = get_soinfo()->find_symbol_by_name(symbol_JNI_OnLoad, nullptr);
-//    int(*JNI_OnLoadFn)(JavaVM*, void*) = nullptr;
     if(sym== nullptr){
         return;
     }
     int(*JNI_OnLoadFn)(JavaVM*, void*) = ( int(*)(JavaVM*, void*))(sym->st_value+get_soinfo()->load_bias);
 
     JavaVM *vm;
-    pEnv->GetJavaVM(&vm);
-    JNIEnv* env;
-    if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
-        return ;
-    }
-    JNI_OnLoadFn(vm, nullptr);
+    pEnv->GetJavaVM(reinterpret_cast<JavaVM **>(&vm));
+    void * linkerJniInvokeInterface = jni_hook_init((struct JNIInvokeInterface*)vm->functions);
+
+    JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
 //void load_dex(JNIEnv *pEnv) {

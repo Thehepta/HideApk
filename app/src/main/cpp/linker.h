@@ -234,37 +234,39 @@ private:
 
 };
 
-struct linker_JNIEnv:public _JNIEnv{
-
-    JNIEnv * old_pEnv;
-    linker_JNIEnv(JNIEnv *pEnv){
-        old_pEnv = pEnv;
-    }
-
-
-    jint GetVersion()
-    { return functions->GetVersion(this); }
-
-    jclass FindClass(const char* name)
-    { return functions->FindClass(this, name); }
-
-};
+//struct linker_JNIEnv:public _JNIEnv{
+//
+//    linker_JNIEnv(JNIEnv* env) {
+//        functions = env->functions;
+//    }
+//
+//    jclass FindClass(const char* name)
+//    { return functions->FindClass(this, name); }
+//    const char* GetStringUTFChars(jstring string, jboolean* isCopy)
+//    {
+//        LOGE("linker_JavaVM GetStringUTFChars");
+//        return functions->GetStringUTFChars(this, string, isCopy);
+//    }
+//};
 
 
 struct linker_JavaVM:public _JavaVM{
 
-
-    linker_JNIEnv * old_env;
-    JavaVM *old_vm;
-    linker_JavaVM(JavaVM *vm){
-        old_vm = vm;
+    linker_JavaVM(JavaVM *pVm) {
+        functions =pVm->functions;
     }
-    jint GetEnv(void** env, jint version){
 
-        int re =functions->GetEnv(this, reinterpret_cast<void **>(&old_env), version);
-        *env = old_env;
+    jint GetEnv(void ** env, jint version){
+
+        int re =functions->GetEnv(this, env, version);
+//        linker_JNIEnv *linkerJniEnv = new linker_JNIEnv((JNIEnv* )*env);
+//        *env = linkerJniEnv;
+        LOGE("linker_JavaVM GetEnv");
         return re;
     }
+
+//    { return functions->GetEnv(this, env, version); }
+
 };
 
 
