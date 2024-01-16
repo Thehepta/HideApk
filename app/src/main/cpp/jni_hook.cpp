@@ -7,7 +7,7 @@
 
 
 
-jint  GetEnv(LinkerJNIInvokeInterface* javaVm, void** env, jint version){
+jint  GetEnv(Linker_JNIInvokeInterface* javaVm, void** env, jint version){
 
     LOGE("hook GetEnv");
     return javaVm->reserved1->GetEnv(reinterpret_cast<JavaVM *>(javaVm->reserved1), env, version);
@@ -15,11 +15,11 @@ jint  GetEnv(LinkerJNIInvokeInterface* javaVm, void** env, jint version){
 
 
 void* jni_hook_init(struct JNIInvokeInterface* jniInvokeInterface){
-    LinkerJNIInvokeInterface *linkerJniInvokeInterface = new LinkerJNIInvokeInterface(jniInvokeInterface);
+    Linker_JNIInvokeInterface *linkerJniInvokeInterface = new Linker_JNIInvokeInterface(jniInvokeInterface);
     linkerJniInvokeInterface->GetEnv = reinterpret_cast<jint (*)(JavaVM *, void **, jint)>(GetEnv);
     return linkerJniInvokeInterface;
 }
 
-LinkerJNIInvokeInterface::LinkerJNIInvokeInterface(struct JNIInvokeInterface *java_vm) {
-    reserved1 = java_vm;
-}
+//Linker_JNIInvokeInterface::Linker_JNIInvokeInterface(struct JNIInvokeInterface *java_vm) {
+//    reserved1 = java_vm;
+//}

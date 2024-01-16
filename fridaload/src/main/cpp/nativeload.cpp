@@ -20,11 +20,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 //        return -1;
 //    }
 
-    replace_vm->functions->GetEnv(replace_vm, reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+    if(replace_vm->functions->GetEnv(replace_vm, reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK){
+        return -1;
+    }
 
 //    linker_JNIEnv *linkerJniEnv = new linker_JNIEnv(env);
 //
-//    linkerJniEnv->FindClass("java/lang/Runnable");
+    env->FindClass("java/lang/Runnable");
     // 在这里进行一些初始化工作
     LOGE("TEXT:%s","JNI_OnLoad");
     return JNI_VERSION_1_6;

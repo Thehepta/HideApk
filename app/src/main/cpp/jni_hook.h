@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include "jni.h"
 
-struct LinkerJNIInvokeInterface {
+struct Linker_JNIInvokeInterface {
     void*       reserved0;
     struct JNIInvokeInterface*       reserved1;
     void*       reserved2;
@@ -42,7 +42,7 @@ struct LinkerJNIInvokeInterface {
     jint        (*GetEnv)(JavaVM*, void**, jint);
     jint        (*AttachCurrentThreadAsDaemon)(JavaVM*, JNIEnv**, void*);
 
-    LinkerJNIInvokeInterface(struct JNIInvokeInterface* java_vm);
+    Linker_JNIInvokeInterface(struct JNIInvokeInterface* java_vm);
 };
 
 
