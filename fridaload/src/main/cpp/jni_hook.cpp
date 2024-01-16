@@ -59,6 +59,19 @@ const char* GetStringUTFChars(JNIEnv * env,jstring string, jboolean* isCopy){
     return functions->GetStringUTFChars( string, isCopy);
 
 }
+jint GetVersion(JNIEnv * env)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->GetVersion();
+}
+
+jclass DefineClass(JNIEnv * env,const char *name, jobject loader, const jbyte* buf,jsize bufLen){
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->DefineClass( name, loader, buf, bufLen);
+}
+
 
 jclass FindClass(JNIEnv * env,const char* name){
     HOOKLOGE("FindClass");
@@ -66,11 +79,94 @@ jclass FindClass(JNIEnv * env,const char* name){
     JNIEnv * functions = linkerJniEnv->env;
     return functions->FindClass( name);
 }
+jmethodID FromReflectedMethod(JNIEnv * env,jobject method)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->FromReflectedMethod( method);
+}
+jfieldID FromReflectedField(JNIEnv * env,jobject field)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->FromReflectedField( field);
+}
+jobject ToReflectedMethod(JNIEnv * env,jclass cls, jmethodID methodID, jboolean isStatic)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->ToReflectedMethod( cls, methodID, isStatic);
+}
+jclass GetSuperclass(JNIEnv * env,jclass clazz)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->GetSuperclass( clazz);
+}
+jboolean IsAssignableFrom(JNIEnv * env,jclass clazz1, jclass clazz2)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->IsAssignableFrom(clazz1, clazz2);
+}
+jobject ToReflectedField(JNIEnv * env,jclass cls, jfieldID fieldID, jboolean isStatic)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->ToReflectedField( cls, fieldID, isStatic);
+}
 
+jint Throw(JNIEnv * env,jthrowable obj)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->Throw( obj);
+}
+
+jint ThrowNew(JNIEnv * env,jclass clazz, const char* message)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->ThrowNew( clazz, message);
+}
+
+jthrowable ExceptionOccurred(JNIEnv * env)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    return functions->ExceptionOccurred();
+}
+
+void ExceptionDescribe(JNIEnv * env)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    functions->ExceptionDescribe();
+}
+
+void ExceptionClear(JNIEnv * env)
+{
+    Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
+    JNIEnv * functions = linkerJniEnv->env;
+    functions->ExceptionClear();
+}
 Linker_JNIEnv::Linker_JNIEnv(JNIEnv * env){
     this->env = env;
     functions = new Linker_JNINativeInterface();
-    functions->GetStringUTFChars = GetStringUTFChars;
+    functions->GetVersion =  GetVersion;
+    functions->DefineClass =  DefineClass;
+    functions->FromReflectedMethod =  FromReflectedMethod;
+    functions->FromReflectedField =  FromReflectedField;
+    functions->ToReflectedMethod =  ToReflectedMethod;
+    functions->GetSuperclass =  GetSuperclass;
+    functions->IsAssignableFrom =  IsAssignableFrom;
+    functions->ToReflectedField =  ToReflectedField;
+    functions->Throw =  Throw;
+    functions->ThrowNew =  ThrowNew;
+    functions->ExceptionOccurred =  ExceptionOccurred;
+    functions->ExceptionDescribe =  ExceptionDescribe;
+    functions->ExceptionClear =  ExceptionClear;
+    functions->GetStringUTFChars =  GetStringUTFChars;
     functions->FindClass = FindClass;
 }
 
