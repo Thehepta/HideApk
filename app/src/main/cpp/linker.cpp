@@ -319,8 +319,7 @@ void LoadTask::init_call(JNIEnv *pEnv) {
 
     JavaVM *vm;
     pEnv->GetJavaVM(reinterpret_cast<JavaVM **>(&vm));
-    void * linkerJniInvokeInterface = jni_hook_init((struct JNIInvokeInterface*)vm->functions);
-
+    void * linkerJniInvokeInterface = jni_hook_init(vm);
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
