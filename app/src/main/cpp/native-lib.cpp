@@ -82,7 +82,7 @@ Java_com_hepta_hideapk_MainActivity_customhideApkLoad(JNIEnv *env, jobject thiz,
 
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
 
-    LoadApkModule(env,pkgName);
+    LoadApkModule(env,pkgName,"com.hepta.fridaload.LoadEntry","text", "(Ljava/lang/String;)V");
     return;
 }
 

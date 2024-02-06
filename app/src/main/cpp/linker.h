@@ -65,7 +65,7 @@ struct ApkNativeInfo {
 void* LoadNativeSoByMem(uint8_t * soArrayMem,int length);
 
 uint8_t * Creatememfd(int fd, int size);
-bool LoadApkModule(JNIEnv *env,char * apkSource);
+bool LoadApkModule(JNIEnv *env,char * apkSource,char * entry_cls,char * method_name,char* method_sig);
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 

@@ -295,18 +295,6 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
 
 }
 
-bool do_dlsym(soinfo* si,const char* sym_name,void** symbol){
-
-    const char* sym_ver= nullptr;
-    version_info vi_instance;
-    version_info* vi = nullptr;
-}
-jclass  (*FindClass_Old)(JNIEnv*, const char*) = nullptr;
-jclass  FindClass_Hook(JNIEnv*env, const char*ptr){
-
-    LOGE("TEXT:%s","FindClass_Hook");
-    return FindClass_Old(env,ptr);
-}
 void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
 
 
@@ -323,7 +311,7 @@ void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
-bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
+bool LoadApkModule(JNIEnv *pEnv,char * apkSource,char * entry_cls,char * method_name,char* method_sig){
 
     jobject currentDexLoad = nullptr;
     auto classloader = pEnv->FindClass("java/lang/ClassLoader");
@@ -408,54 +396,53 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
         pEnv->SetObjectArrayElement(byteBuffers,i,load_dex);
     }
     currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, byteBuffers, currentDexLoad);
-    jobject g_currentDexLoad =  pEnv->NewGlobalRef(currentDexLoad);
-//    pEnv->DeleteLocalRef(currentDexLoad);
-    linker_protect();
-
-    for (size_t i = 0; i<load_tasks.size(); ++i) {
-
-        LoadTask* task = load_tasks[i];
-        soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
-        if (si == nullptr) {
-            return false;
-        }
-        task->set_soinfo(si);
-
-        if (!task->read()) {
-//            soinfo_free(si);
-            task->set_soinfo(nullptr);
-            return false;
-        }
-        const ElfReader& elf_reader = task->get_elf_reader();
-        for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
-            if (d->d_tag == DT_RUNPATH) {
-                si->set_dt_runpath(elf_reader.get_string(d->d_un.d_val));
-            }
-            if (d->d_tag == DT_SONAME) {
-                si->set_soname(elf_reader.get_string(d->d_un.d_val));
-            }
-        }
-    }
-
-
-    for (auto&& task : load_tasks) {
-        task->soload(load_tasks, pEnv);
-        task->init_call(pEnv, g_currentDexLoad);
-    }
-
-    linker_unprotect();
-
-
     if (currentDexLoad != nullptr ) {
-        jobject  sand_class_loader_ = pEnv->NewGlobalRef( currentDexLoad);
-        jstring LoadEntry_cls = pEnv->NewStringUTF("com.hepta.fridaload.LoadEntry");
-        jobject LoadEntrycls_obj = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,LoadEntry_cls);
-        jmethodID call_method_mth = pEnv->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
+
+        jobject g_currentDexLoad =  pEnv->NewGlobalRef(currentDexLoad);
+        linker_protect();
+
+        for (size_t i = 0; i<load_tasks.size(); ++i) {
+
+            LoadTask* task = load_tasks[i];
+            soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+            if (si == nullptr) {
+                return false;
+            }
+            task->set_soinfo(si);
+
+            if (!task->read()) {
+//            soinfo_free(si);
+                task->set_soinfo(nullptr);
+                return false;
+            }
+            const ElfReader& elf_reader = task->get_elf_reader();
+            for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
+                if (d->d_tag == DT_RUNPATH) {
+                    si->set_dt_runpath(elf_reader.get_string(d->d_un.d_val));
+                }
+                if (d->d_tag == DT_SONAME) {
+                    si->set_soname(elf_reader.get_string(d->d_un.d_val));
+                }
+            }
+        }
+
+
+        for (auto&& task : load_tasks) {
+            task->soload(load_tasks, pEnv);
+            task->init_call(pEnv, g_currentDexLoad);
+        }
+
+        linker_unprotect();
+        jstring LoadEntry_cls = pEnv->NewStringUTF(entry_cls);
+        jobject LoadEntrycls_obj = pEnv->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);
+        jmethodID call_method_mth = pEnv->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), method_name, method_sig);
         jstring aerg = pEnv->NewStringUTF("test load hiedapk is successful");
         pEnv->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_method_mth,aerg);
+        return true;
+    } else{
+        return false;
     }
 
-    return true;
 
 }
 
