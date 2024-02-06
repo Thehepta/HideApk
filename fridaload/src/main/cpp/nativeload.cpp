@@ -8,10 +8,9 @@
 
 
 
-
-jint LoadEntry_text(JNIEnv *env, jclass clazz, jstring str) {
+ void LoadEntry_text(JNIEnv *env, jclass clazz, jstring str) {
     const char * string = env->GetStringUTFChars(str, nullptr);
-    LOGE("TEXT:%s",string);
+    LOGE("LoadEntry_text_fun :%s",string);
 }
 
 

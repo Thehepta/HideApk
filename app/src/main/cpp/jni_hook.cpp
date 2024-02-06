@@ -8,12 +8,21 @@
 #define LOG_TAG "JNI_HOOK"
 #define HOOKLOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
+
+JavaVM* jni_hook_init(JavaVM* vm,jobject classLoader){
+    Linker_JavaVM *linkerJavaVm = new Linker_JavaVM(vm,classLoader);
+    return (JavaVM*)linkerJavaVm;
+}
+
+
+
+
 jint  GetEnv(JavaVM * vm, void** env, jint version){
 
     HOOKLOGE("GetEnv");
     Linker_JavaVM* linkerJavaVm = (Linker_JavaVM *) vm;
     int re = linkerJavaVm->vm->GetEnv(env, version);
-    Linker_JNIEnv * linkerJniEnv = new Linker_JNIEnv((JNIEnv *)*env);
+    Linker_JNIEnv * linkerJniEnv = new Linker_JNIEnv((JNIEnv *) *env, linkerJavaVm->classLoader);
     *env = linkerJniEnv;
     return re;
 }
@@ -39,8 +48,9 @@ jint AttachCurrentThreadAsDaemon(JavaVM*vm,JNIEnv** p_env, void* thr_args){
 }
 
 
-Linker_JavaVM::Linker_JavaVM(JavaVM *vm) {
+Linker_JavaVM::Linker_JavaVM(JavaVM *vm,jobject classLoader) {
     this->vm = vm;
+    this->classLoader = classLoader;
     functions = new Linker_JNIInvokeInterface();
     functions->GetEnv = GetEnv;
     functions->DestroyJavaVM = DestroyJavaVM;
@@ -77,7 +87,11 @@ jclass FindClass(JNIEnv * env,const char* name){
     HOOKLOGE("FindClass");
     Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
     JNIEnv * functions = linkerJniEnv->env;
-    return functions->FindClass( name);
+    jstring FindClass_name = functions->NewStringUTF(name);
+    auto classloader = functions->FindClass("java/lang/ClassLoader");
+    jmethodID method_loadClass = functions->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+    jobject FindClass_name_cls_obj = functions->CallObjectMethod(linkerJniEnv->classLoader,method_loadClass,FindClass_name);
+    return static_cast<jclass>(FindClass_name_cls_obj);
 }
 jmethodID FromReflectedMethod(JNIEnv * env,jobject method)
 {
@@ -1474,8 +1488,9 @@ jobjectRefType GetObjectRefType(JNIEnv* env,jobject obj)
     JNIEnv * functions = linkerJniEnv->env;
     return functions->GetObjectRefType( obj); }
 
-Linker_JNIEnv::Linker_JNIEnv(JNIEnv * env){
+Linker_JNIEnv::Linker_JNIEnv(JNIEnv *env, jobject classLoader) {
     this->env = env;
+    this->classLoader = classLoader;
     functions = new Linker_JNINativeInterface();
     functions->GetVersion =  GetVersion;
     functions->DefineClass =  DefineClass;
@@ -1726,11 +1741,6 @@ Linker_JNIEnv::Linker_JNIEnv(JNIEnv * env){
 
 
 
-JavaVM* jni_hook_init(JavaVM* vm){
-    Linker_JavaVM *linkerJavaVm = new Linker_JavaVM(vm);
-
-    return (JavaVM*)linkerJavaVm;
-}
 
 
 

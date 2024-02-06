@@ -212,7 +212,7 @@ public:
     }
 
     void soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv);
-    void init_call(JNIEnv *pEnv);
+    void init_call(JNIEnv *pEnv, jobject pJobject);
 
 private:
 

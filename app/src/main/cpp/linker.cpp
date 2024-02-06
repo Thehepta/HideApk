@@ -291,7 +291,7 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     get_soinfo()->link_image(lookup_list);
     get_soinfo()->set_linked();
     get_soinfo()->call_constructors();
-    init_call(pEnv);
+//    init_call(pEnv);
 
 }
 
@@ -307,7 +307,7 @@ jclass  FindClass_Hook(JNIEnv*env, const char*ptr){
     LOGE("TEXT:%s","FindClass_Hook");
     return FindClass_Old(env,ptr);
 }
-void LoadTask::init_call(JNIEnv *pEnv) {
+void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
 
 
     SymbolName symbol_JNI_OnLoad("JNI_OnLoad");
@@ -319,55 +319,12 @@ void LoadTask::init_call(JNIEnv *pEnv) {
 
     JavaVM *vm;
     pEnv->GetJavaVM(reinterpret_cast<JavaVM **>(&vm));
-    void * linkerJniInvokeInterface = jni_hook_init(vm);
+    void * linkerJniInvokeInterface = jni_hook_init(vm,g_currentDexLoad);
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
-//void load_dex(JNIEnv *pEnv) {
-//    jobjectArray JAAR = nullptr;
-//    auto classloader = pEnv->FindClass("java/lang/ClassLoader");
-//    auto getsyscl_mid = pEnv->GetStaticMethodID(classloader, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-//    auto sys_classloader = pEnv->CallStaticObjectMethod(classloader, getsyscl_mid);
-//    jmethodID method_loadClass = pEnv->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-//
-//    if (!sys_classloader){
-//        LOGE("getSystemClassLoader failed!!!");
-//        return;
-//    }
-//    auto in_memory_classloader = pEnv->FindClass( "dalvik/system/InMemoryDexClassLoader");
-//    auto initMid = pEnv->GetMethodID( in_memory_classloader, "<init>",
-//                                      "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
-//    auto byte_buffer_class = pEnv->FindClass("java/nio/ByteBuffer");
-//    auto dex_buffer = pEnv->NewDirectByteBuffer(dex_addr, dex_size);
-//    if (auto my_cl = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, sys_classloader)) {
-//        jobject  sand_class_loader_ = pEnv->NewGlobalRef( my_cl);
-//
-//        jstring xposed = pEnv->NewStringUTF("com.rxposed.sandhooktextapp.XposedTest");
-//        jobject XposedTest = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,xposed);
-//
-//        jclass Class_cls = pEnv->FindClass("java/lang/Class");
-//        jmethodID clsmethod_method = pEnv->GetMethodID(Class_cls,"getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
-//        jclass Method_cls = pEnv->FindClass("java/lang/reflect/Method");
-//        jmethodID invoke_met =  pEnv->GetMethodID(Method_cls,"invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
-//
-//        jobject user_metohd = nullptr;
-//        jstring  call_method_name = pEnv->NewStringUTF("native_hook");
-//        user_metohd = pEnv->CallObjectMethod(XposedTest, clsmethod_method,call_method_name,JAAR);
-//        pEnv->CallObjectMethod(user_metohd, invoke_met,XposedTest,JAAR);
-//
-//    } else {
-//        LOGE("InMemoryDexClassLoader creation failed!!!");
-//        return;
-//    }
-//}
-
-
-
 bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
 
-
-
-    jobjectArray JAAR = nullptr;
     jobject currentDexLoad = nullptr;
     auto classloader = pEnv->FindClass("java/lang/ClassLoader");
     auto getsyscl_mid = pEnv->GetStaticMethodID(classloader, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
@@ -379,13 +336,13 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
         return false;
     }
     auto in_memory_classloader = pEnv->FindClass( "dalvik/system/InMemoryDexClassLoader");
-    auto initMid = pEnv->GetMethodID( in_memory_classloader, "<init>","(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
+    auto initMid = pEnv->GetMethodID( in_memory_classloader, "<init>","([Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
     auto byte_buffer_class = pEnv->FindClass("java/nio/ByteBuffer");
 
 
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     std::vector<LoadTask*> load_tasks;
-    std::vector<uint8_t*> load_dexs;
+    std::vector<jobject> load_dexs;
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
 
@@ -439,17 +396,20 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
                 return false;
             }
             auto dex_buffer = pEnv->NewDirectByteBuffer(file_data, file_stat.m_uncomp_size);
-            if (currentDexLoad == nullptr ) {
-                currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, sys_classloader);
-            } else {
-                currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, dex_buffer, currentDexLoad);
-            }
-
+            load_dexs.push_back(dex_buffer);
         }
     }
     mz_zip_reader_end(&zip_archive);
 
+    jobjectArray byteBuffers = pEnv->NewObjectArray( load_dexs.size(), byte_buffer_class, NULL);
 
+    for (size_t i = 0; i<load_dexs.size(); ++i) {
+        jobject load_dex = load_dexs[i];
+        pEnv->SetObjectArrayElement(byteBuffers,i,load_dex);
+    }
+    currentDexLoad = pEnv->NewObject( in_memory_classloader, initMid, byteBuffers, currentDexLoad);
+    jobject g_currentDexLoad =  pEnv->NewGlobalRef(currentDexLoad);
+//    pEnv->DeleteLocalRef(currentDexLoad);
     linker_protect();
 
     for (size_t i = 0; i<load_tasks.size(); ++i) {
@@ -480,6 +440,7 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
 
     for (auto&& task : load_tasks) {
         task->soload(load_tasks, pEnv);
+        task->init_call(pEnv, g_currentDexLoad);
     }
 
     linker_unprotect();
@@ -490,7 +451,7 @@ bool LoadApkModule(JNIEnv *pEnv,char * apkSource){
         jstring LoadEntry_cls = pEnv->NewStringUTF("com.hepta.fridaload.LoadEntry");
         jobject LoadEntrycls_obj = pEnv->CallObjectMethod(sand_class_loader_,method_loadClass,LoadEntry_cls);
         jmethodID call_method_mth = pEnv->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
-        jstring aerg = pEnv->NewStringUTF("test load hiedapk");
+        jstring aerg = pEnv->NewStringUTF("test load hiedapk is successful");
         pEnv->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_method_mth,aerg);
     }
 

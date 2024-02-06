@@ -32,6 +32,7 @@
 #include "jni.h"
 
 
+JavaVM* jni_hook_init(JavaVM* vm,jobject classLoader);
 
 
 struct Linker_JNIInvokeInterface {
@@ -53,7 +54,8 @@ struct Linker_JavaVM {
 
     struct Linker_JNIInvokeInterface * functions;
     JavaVM * vm;
-    Linker_JavaVM(JavaVM *vm) ;
+    jobject classLoader;
+    Linker_JavaVM(JavaVM *vm,jobject classLoader) ;
 
 };
 
@@ -402,12 +404,12 @@ struct Linker_JNIEnv {
     /* do not rename this; it does not seem to be entirely opaque */
     struct Linker_JNINativeInterface* functions;
     JNIEnv * env;
-    Linker_JNIEnv(JNIEnv * env);
+    jobject classLoader;
+    Linker_JNIEnv(JNIEnv *env, jobject pJobject);
 };
 
 
 
-JavaVM* jni_hook_init(JavaVM* vm);
 
 
 
