@@ -12,8 +12,8 @@
 
 #define TRACECODE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,"[file %s],[line %d],[function:%s]",__FILE__, __LINE__,__func__);
 
-
 #define DEBUG(x...)          LOGE(x)
+
 #define INFO(x...)           LOGE(x)
 
 #define PRINT(x...)          LOGE( x)

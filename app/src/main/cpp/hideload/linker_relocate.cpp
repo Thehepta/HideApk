@@ -9,6 +9,7 @@
 #include "linker_soinfo.h"
 #include "linker_phdr.h"
 #include "linker_version.h"
+#include "linker_debug.h"
 
 
 
@@ -565,7 +566,7 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
             android_relocs_[1] == 'P' &&
             android_relocs_[2] == 'S' &&
             android_relocs_[3] == '2') {
-            DEBUG("[ android relocating %s ]", get_realpath());
+            LOGE("[ android relocating %s ]", get_realpath());
 
             const uint8_t* packed_relocs = android_relocs_ + 4;
             const size_t packed_relocs_size = android_relocs_size_ - 4;
@@ -580,7 +581,7 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
     }
 
     if (relr_ != nullptr) {
-        DEBUG("[ relocating %s relr ]", get_realpath());
+        LOGE("[ relocating %s relr ]", get_realpath());
         if (!relocate_relr()) {
             return false;
         }
@@ -589,14 +590,14 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
 #if defined(USE_RELA)
     if (rela_ != nullptr) {
-        DEBUG("[ relocating %s rela ]", get_realpath());
+        LOGE("[ relocating %s rela ]", get_realpath());
 
         if (!plain_relocate<RelocMode::Typical>(relocator, rela_, rela_count_)) {
             return false;
         }
     }
     if (plt_rela_ != nullptr) {
-        DEBUG("[ relocating %s plt rela ]", get_realpath());
+        LOGE("[ relocating %s plt rela ]", get_realpath());
         if (!plain_relocate<RelocMode::JumpTable>(relocator, plt_rela_, plt_rela_count_)) {
             return false;
         }

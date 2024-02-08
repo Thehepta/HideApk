@@ -160,7 +160,7 @@ RuntimeModule GetProcessModule(const char *name) {
 }
 
 
-int elf_ctx_init(elf_ctx_t *ctx, void *header_) {
+int linker_elf_ctx_init(elf_ctx_t *ctx, void *header_) {
     ElfW(Ehdr) *ehdr = (ElfW(Ehdr) *)header_;
     ctx->header = ehdr;
 
@@ -229,7 +229,7 @@ static void *iterate_symbol_table_impl(const char *symbol_name, ElfW(Sym) * symt
     return NULL;
 }
 
-void *elf_ctx_iterate_symbol_table(elf_ctx_t *ctx, const char *symbol_name) {
+void *linker_elf_ctx_iterate_symbol_table(elf_ctx_t *ctx, const char *symbol_name) {
     void *result = NULL;
     if (ctx->symtab_ && ctx->strtab_) {
         size_t count = ctx->sym_sh_->sh_size / sizeof(ElfW(Sym));
@@ -251,7 +251,7 @@ void *elf_ctx_iterate_symbol_table(elf_ctx_t *ctx, const char *symbol_name) {
 
 
 
-void *resolve_elf_internal_symbol(const char *library_name, const char *symbol_name) {
+void *linker_resolve_elf_internal_symbol(const char *library_name, const char *symbol_name) {
     void *result = NULL;
 
     elf_ctx_t ctx;
@@ -282,8 +282,8 @@ void *resolve_elf_internal_symbol(const char *library_name, const char *symbol_n
         }
         close(fd);
 
-        elf_ctx_init(&ctx,mmap_buffer);
-        result = elf_ctx_iterate_symbol_table(&ctx, symbol_name);
+        linker_elf_ctx_init(&ctx, mmap_buffer);
+        result = linker_elf_ctx_iterate_symbol_table(&ctx, symbol_name);
 
         if (result)
             result = (void *)((addr_t)result + (addr_t)module.load_address - ((addr_t)mmap_buffer - (addr_t)ctx.load_bias));

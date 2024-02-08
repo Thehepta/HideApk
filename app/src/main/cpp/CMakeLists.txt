@@ -14,7 +14,7 @@ project("hideapk")
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_subdirectory(nativeloader)
+add_subdirectory(hideload)
 
 
 
@@ -25,18 +25,6 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        elf_symbol_resolver.cpp
-        miniz.c
-        linker.cpp
-        linker_soinfo.cpp
-        linker_phdr.cpp
-        linker_mapped_file_fragment.cpp
-        linker_utils.cpp
-        linker_debug.cpp
-        linker_version.cpp
-        linker_symbol.cpp
-        linker_relocate.cpp
-        jni_hook.cpp
         native-lib.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -58,7 +46,7 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         hideapk
-
+        hideload
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})

@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
                         try {
 
                             ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
-                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,getClassLoader());
+                            PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,null);
                             Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.fridaload.LoadEntry");
                             Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
                             method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);

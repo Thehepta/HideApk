@@ -11,12 +11,13 @@
 #include "linker_gnu_hash.h"
 #include "linker.h"
 #include "elf_symbol_resolver.h"
-
+#include "linker_debug.h"
 int g_argc = 0;
 char** g_argv = nullptr;
 char** g_envp = nullptr;
 
-ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr) =(ElfW(Addr) (*)(ElfW(Addr) resolver_addr)) resolve_elf_internal_symbol(get_android_linker_path(), "__dl__Z19call_ifunc_resolvery");
+ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr) =(ElfW(Addr) (*)(ElfW(Addr) resolver_addr)) linker_resolve_elf_internal_symbol(
+        get_android_linker_path(), "__dl__Z19call_ifunc_resolvery");
 
 #if defined(__LP64__)
 static constexpr const char* kLibPath = "lib64";
@@ -35,7 +36,7 @@ bool soinfo::prelink_image() {
     bool relocating_linker = (flags_ & FLAG_LINKER) != 0;
     if (!relocating_linker) {
         INFO("[ Linking \"%s\" ]", get_realpath());
-        DEBUG("si->base = %p si->flags = 0x%08x", reinterpret_cast<void *>(base), flags_);
+        INFO("si->base = %p si->flags = 0x%08x", reinterpret_cast<void *>(base), flags_);
     }
 
     if (dynamic == nullptr) {
@@ -45,7 +46,7 @@ bool soinfo::prelink_image() {
         return false;
     } else {
         if (!relocating_linker) {
-            DEBUG("dynamic = %p", dynamic);
+            INFO("dynamic = %p", dynamic);
         }
     }
 

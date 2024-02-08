@@ -65,7 +65,7 @@ struct ApkNativeInfo {
 void* LoadNativeSoByMem(uint8_t * soArrayMem,int length);
 
 uint8_t * Creatememfd(int fd, int size);
-bool LoadApkModule(JNIEnv *env,char * apkSource,char * entry_cls,char * method_name,char* method_sig);
+jobject hideLoadApkModule(JNIEnv *env, char * apkSource);
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 
@@ -261,7 +261,7 @@ struct linker_JavaVM:public _JavaVM{
         int re =functions->GetEnv(this, env, version);
 //        linker_JNIEnv *linkerJniEnv = new linker_JNIEnv((JNIEnv* )*env);
 //        *env = linkerJniEnv;
-        LOGE("linker_JavaVM GetEnv");
+//        LOGE("linker_JavaVM GetEnv");
         return re;
     }
 

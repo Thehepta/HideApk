@@ -3,8 +3,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <android/log.h>
-#include "linker.h"
-
+#include "hideload/linker.h"
 #define LOG_TAG "Native"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
@@ -38,6 +37,7 @@ Java_com_hepta_hideapk_MainActivity_stringFromJNI(
         JNIEnv* env,
         jobject /* this */) {
     std::string hello = "Hello from C++";
+//    int a = addtext(1,2);
     return env->NewStringUTF(hello.c_str());
 }
 
@@ -81,8 +81,16 @@ JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_customhideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
 
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
+    auto classloader = env->FindClass("java/lang/ClassLoader");
 
-    LoadApkModule(env,pkgName,"com.hepta.fridaload.LoadEntry","text", "(Ljava/lang/String;)V");
+    jobject g_currentDexLoad = hideLoadApkModule(env, pkgName);
+    jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+
+    jstring LoadEntry_cls = env->NewStringUTF("com.hepta.fridaload.LoadEntry");
+    jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);
+    jmethodID call_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
+    jstring aerg = env->NewStringUTF("load hiedapk is successful");
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_method_mth,aerg);
     return;
 }
 
