@@ -90,9 +90,41 @@ public class MainActivity extends AppCompatActivity {
 //                hideApk("com.hepta.adirf");
             }
         });
+
+        Button ExternhideLoadSoBtn = binding.ExternHideLoadSo;
+        ExternhideLoadSoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e("rzx","ExternhideLoadSoBtn");
+                ApplicationInfo applicationInfo = null;
+                try {
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.textmodule", PackageManager.GET_META_DATA);
+                } catch (PackageManager.NameNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                String clsname = applicationInfo.metaData.getString("rxposed_clsentry");
+                String mtdname = applicationInfo.metaData.getString("rxposed_mtdentry");
+                ClassLoader classLoader = GethideApkLoad(applicationInfo.sourceDir);
+                try {
+                    Class<?> cls = classLoader.loadClass(clsname);
+
+                    Method entry_method = cls.getMethod(mtdname,Context.class,String.class);
+                    entry_method.invoke(cls,getApplicationContext(),applicationInfo.sourceDir);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 
     private native void customhideApkLoad(String s);
+    private native ClassLoader GethideApkLoad(String s);
     private native void customhideSoLoad(String libnamePath);
 
     /**

@@ -32,6 +32,9 @@ soinfo* (*solist_get_somain)() = (soinfo* (*)()) linker_resolve_elf_internal_sym
 char* (*soinfo_get_soname)(soinfo*) = (char* (*)(soinfo*)) linker_resolve_elf_internal_symbol(
         get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
 
+bool (*solist_remove_soinfo)(soinfo*) = (bool  (*)(soinfo*)) linker_resolve_elf_internal_symbol(
+        get_android_linker_path(), "__dl__Z20solist_remove_soinfoP6soinfo");
+
 
 
 static inline uintptr_t untag_address(uintptr_t p) {
@@ -327,6 +330,12 @@ void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
+void LoadTask::hideso() {
+
+    solist_remove_soinfo(this->get_soinfo());
+
+}
+
 jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
 
     jobject currentDexLoad = nullptr;
@@ -445,6 +454,7 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
         for (auto&& task : load_tasks) {
             task->soload(load_tasks, env);
             task->init_call(env, g_currentDexLoad);
+            task->hideso();
         }
 
         linker_unprotect();
