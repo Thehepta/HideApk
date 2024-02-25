@@ -987,6 +987,23 @@ void soinfo::add_child(soinfo *child) {
     }
 }
 
+soinfo::soinfo(android_namespace_t *ns, const char *name, const struct stat *file_stat,
+               off64_t file_offset, int rtld_flags) {
+
+    memset(this, 0, sizeof(*this));
+    flags_ = FLAG_NEW_SOINFO;
+    version_ = SOINFO_VERSION;
+
+    if (file_stat != nullptr) {
+        this->st_dev_ = file_stat->st_dev;
+        this->st_ino_ = file_stat->st_ino;
+        this->file_offset_ = file_offset;
+    }
+
+    this->rtld_flags_ = rtld_flags;
+
+}
+
 
 uint32_t calculate_elf_hash(const char* name) {
     const uint8_t* name_bytes = reinterpret_cast<const uint8_t*>(name);

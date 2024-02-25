@@ -20,8 +20,8 @@
 android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(linkerResolveElfInternalSymbol(
         get_android_linker_path(), "__dl_g_default_namespace"));
 
-soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
+//soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) linkerResolveElfInternalSymbol(
+//        get_android_linker_path(), "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
 
 soinfo* (*solist_get_head)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
         get_android_linker_path(), "__dl__Z15solist_get_headv");
@@ -468,8 +468,8 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
         for (size_t i = 0; i<load_tasks.size(); ++i) {
 
             LoadTask* task = load_tasks[i];
-            soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
-//            soinfo* si = new soinfo(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+//            soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+            soinfo* si = new soinfo(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
             if (si == nullptr) {
                 return nullptr;
             }
