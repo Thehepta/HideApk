@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("rzx","ExternhideLoadSoBtn");
                 ApplicationInfo applicationInfo = null;
                 try {
-                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.textmodule", PackageManager.GET_META_DATA);
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.davlik", PackageManager.GET_META_DATA);
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }
@@ -110,6 +110,10 @@ public class MainActivity extends AppCompatActivity {
 
                     Method entry_method = cls.getMethod(mtdname,Context.class,String.class);
                     entry_method.invoke(cls,getApplicationContext(),applicationInfo.sourceDir);
+//                    Method entry_method = cls.getMethod("getClassLoaderList");
+//                    entry_method.invoke(cls);
+
+
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 } catch (NoSuchMethodException e) {

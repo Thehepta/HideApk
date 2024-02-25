@@ -102,12 +102,25 @@ Java_com_hepta_hideapk_MainActivity_customhideApkLoad(JNIEnv *env, jobject thiz,
 
     jobject g_currentDexLoad = hideLoadApkModule(env, pkgName);
     jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-
     jstring LoadEntry_cls = env->NewStringUTF("com.hepta.fridaload.LoadEntry");
     jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);
-    jmethodID call_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text", "(Ljava/lang/String;)V");
-    jstring aerg = env->NewStringUTF("load hiedapk is successful");
-    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_method_mth,aerg);
+//    jstring arg1 = env->NewStringUTF("load hiedapk direct call jni native methdo successful");
+//    jmethodID call_jni_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test", "(Ljava/lang/String;)V");
+//    jmethodID call_jni_method_mth2 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test2", "(Ljava/lang/String;)V");
+//    jmethodID call_jni_method_mth3 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test3", "(Ljava/lang/String;)V");
+//    jmethodID call_jni_method_mth4 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test4", "(Ljava/lang/String;)V");
+//    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth,arg1);
+//    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth2,arg1);
+//    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth3,arg1);
+//    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth4,arg1);
+//
+//    jmethodID call_java_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test_java_call_native", "(Ljava/lang/String;)V");
+//    jstring arg2 = env->NewStringUTF("load hiedapk direct call java methdo successful");
+//    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_java_method_mth,arg2);
+
+    jmethodID call_java_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text_java", "()V");
+    jstring arg2 = env->NewStringUTF("load call java methdo successful");
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_java_method_mth,arg2);
     return;
 }
 

@@ -8,14 +8,29 @@
 
 
 
- void LoadEntry_text(JNIEnv *env, jclass clazz, jstring str) {
+ void LoadEntry_test(JNIEnv *env, jclass clazz, jstring str) {
     const char * string = env->GetStringUTFChars(str, nullptr);
     LOGE("LoadEntry_text_fun :%s",string);
 }
 
+void LoadEntry_test2(JNIEnv *env, jclass clazz, jstring str) {
+    const char * string = env->GetStringUTFChars(str, nullptr);
+    LOGE("LoadEntry_text_fun2 :%s",string);
+}
+
+void LoadEntry_test3(JNIEnv *env, jclass clazz, jstring str) {
+    const char * string = env->GetStringUTFChars(str, nullptr);
+    LOGE("LoadEntry_text_fun3 :%s",string);
+}
+
+void LoadEntry_test4(JNIEnv *env, jclass clazz, jstring str) {
+    const char * string = env->GetStringUTFChars(str, nullptr);
+    LOGE("LoadEntry_text_fun4 :%s",string);
+}
 
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
+    LOGE("Call JNI_OnLoad");
     JNIEnv* env;
     if (vm->GetEnv( (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
         return -1;
@@ -29,11 +44,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
     jclass classTest = env->FindClass("com/hepta/fridaload/LoadEntry");
     JNINativeMethod methods[]= {
-            {"text", "(Ljava/lang/String;)V", (void*)LoadEntry_text},
+            {"test", "(Ljava/lang/String;)V", (void*)LoadEntry_test},
+            {"test2", "(Ljava/lang/String;)V", (void*)LoadEntry_test2},
+            {"test3", "(Ljava/lang/String;)V", (void*)LoadEntry_test2},
+            {"test4", "(Ljava/lang/String;)V", (void*)LoadEntry_test2},
     };
     env->RegisterNatives(classTest, methods, sizeof(methods)/sizeof(JNINativeMethod));
     // 在这里进行一些初始化工作
-    LOGE("TEXT:%s","JNI_OnLoad");
     return JNI_VERSION_1_6;
 }
 

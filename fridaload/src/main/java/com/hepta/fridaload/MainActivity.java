@@ -10,7 +10,7 @@ public class MainActivity extends AppCompatActivity {
 
     static {
 
-        System.loadLibrary("nativetext");
+//        System.loadLibrary("nativetext");
     }
 
     @Override
@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
 //                        LoadEntry.Entry(getApplicationContext(),getApplicationInfo().sourceDir);
 //                        System.loadLibrary("frida-gadget");
-                        LoadEntry.text("rerewrewrew");
+                        LoadEntry.test("rerewrewrew");
                     }
                 }.start();
             }
