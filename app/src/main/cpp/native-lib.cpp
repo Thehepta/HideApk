@@ -74,7 +74,7 @@ Java_com_hepta_hideapk_MainActivity_GethideApkLoad(JNIEnv *env, jobject thiz, js
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(source, 0));
     auto classloader = env->FindClass("java/lang/ClassLoader");
 
-    jobject g_currentDexLoad = hideLoadApkModule(env, pkgName);
+    jobject g_currentDexLoad = FilehideLoadApkModule(env, pkgName);
 //    jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
 //
 //    jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,className);
@@ -88,19 +88,50 @@ Java_com_hepta_hideapk_MainActivity_GethideApkLoad(JNIEnv *env, jobject thiz, js
 
 
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_customMemhideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
 
+    LOGE("Java_com_hepta_hideapk_MainActivity_customMemhideApkLoad");
+    char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
+    auto classloader = env->FindClass("java/lang/ClassLoader");
 
+    jobject g_currentDexLoad = memhideLoadApkModule(env, pkgName);
+    jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+    jstring LoadEntry_cls = env->NewStringUTF("com.hepta.fridaload.LoadEntry");
+    jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);
+    jstring arg1 = env->NewStringUTF("load hiedapk direct call jni native methdo successful");
+    jmethodID call_jni_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test", "(Ljava/lang/String;)V");
+    jmethodID call_jni_method_mth2 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test2", "(Ljava/lang/String;)V");
+    jmethodID call_jni_method_mth3 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test3", "(Ljava/lang/String;)V");
+    jmethodID call_jni_method_mth4 = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test4", "(Ljava/lang/String;)V");
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth,arg1);
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth2,arg1);
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth3,arg1);
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_jni_method_mth4,arg1);
+
+    jmethodID call_java_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "test_java_call_native", "(Ljava/lang/String;)V");
+    jstring arg2 = env->NewStringUTF("load hiedapk direct call java methdo successful");
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_java_method_mth,arg2);
+
+    jmethodID call_text_java_method_mth = env->GetStaticMethodID(static_cast<jclass>(LoadEntrycls_obj), "text_java", "()V");
+    jstring arg3 = env->NewStringUTF("load call java methdo successful");
+    env->CallStaticVoidMethod(static_cast<jclass>(LoadEntrycls_obj), call_text_java_method_mth,arg3);
+    return;
+}
 
 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_hepta_hideapk_MainActivity_customhideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
+Java_com_hepta_hideapk_MainActivity_customFilehideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
+
+    LOGE("Java_com_hepta_hideapk_MainActivity_customFilehideApkLoad");
 
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
     auto classloader = env->FindClass("java/lang/ClassLoader");
 
-    jobject g_currentDexLoad = hideLoadApkModule(env, pkgName);
+    jobject g_currentDexLoad = FilehideLoadApkModule(env, pkgName);
     jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
     jstring LoadEntry_cls = env->NewStringUTF("com.hepta.fridaload.LoadEntry");
     jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);

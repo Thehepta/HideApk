@@ -25,19 +25,21 @@
         </activity>
 
 
-    <meta-data
-        android:name="rxmodule"
-        android:value="true" />
-    <meta-data
-        android:name="rxposed_support"
-        android:value="true" />
-    <meta-data
-        android:name="rxposed_clsentry"
-        android:value="com.hepta.adirf.LoadEntry" />
-
-    <meta-data
-        android:name="rxposed_mtdentry"
-        android:value="Entry" />
+        <meta-data
+            android:name="rxmodule"
+            android:value="true" />
+        <meta-data
+            android:name="rxposed_support"
+            android:value="true" />
+        <meta-data
+            android:name="rxposed_clsentry"
+            android:value="com.hepta.adirf.LoadEntry" />
+        <meta-data
+            android:name="rxposed_mtdentry"
+            android:value="Entry" />
+        <meta-data
+            android:name="rxposed_argument"
+            android:value="Entry" />
 
     </application>
 

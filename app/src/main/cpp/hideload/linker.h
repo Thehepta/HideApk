@@ -42,8 +42,8 @@ struct ApkNativeInfo {
     std::string libname;
     int fd;
 };
-
-jobject hideLoadApkModule(JNIEnv *env, char * apkSource);
+jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource);
+jobject memhideLoadApkModule(JNIEnv *env, char * apkSource);
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 
@@ -191,7 +191,7 @@ public:
 
     void soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv);
     void init_call(JNIEnv *pEnv, jobject pJobject);
-    void hideso();
+//    void hideso();
 
 private:
 

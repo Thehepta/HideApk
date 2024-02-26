@@ -79,7 +79,6 @@ soinfo_do_lookup_impl(const char* name, const version_info* vi,
 
         std::vector<SymbolLookupLib>::iterator  lib ;
         const std::vector<SymbolLookupLib> vector =  lookup_list.getVectorSymLib();
-        ;
         while (true) {
             if (it == end) return nullptr;
             lib = it++;

@@ -32,8 +32,8 @@ soinfo* (*solist_get_somain)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
 char* (*soinfo_get_soname)(soinfo*) = (char* (*)(soinfo*)) linkerResolveElfInternalSymbol(
         get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
 
-bool (*solist_remove_soinfo)(soinfo*) = (bool  (*)(soinfo*)) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__Z20solist_remove_soinfoP6soinfo");
+//bool (*solist_remove_soinfo)(soinfo*) = (bool  (*)(soinfo*)) linkerResolveElfInternalSymbol(
+//        get_android_linker_path(), "__dl__Z20solist_remove_soinfoP6soinfo");
 
 
 
@@ -138,47 +138,47 @@ soinfo* find_containing_library(const void* p) {
     return nullptr;
 }
 
-void linker_protect(){
-
-
-    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
-    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
-    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
-    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
-
-
-    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
-    protect_all(g_soinfo_allocator,PROT_READ | PROT_WRITE);      //arg1 = 0x73480D23D8
-    protect_all(g_soinfo_links_allocator,PROT_READ | PROT_WRITE);
-    protect_all(g_namespace_allocator,PROT_READ | PROT_WRITE);
-    protect_all(g_namespace_list_allocator,PROT_READ | PROT_WRITE);
-}
-
-void linker_unprotect(){
-
-
-    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
-    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
-    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
-    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
-
-
-    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
-    protect_all(g_soinfo_allocator,PROT_READ  );
-    protect_all(g_soinfo_links_allocator,PROT_READ  );
-    protect_all(g_namespace_allocator,PROT_READ  );
-    protect_all(g_namespace_list_allocator,PROT_READ  );
-}
+//void linker_protect(){
+//
+//
+//    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
+//    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
+//    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
+//    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
+//
+//
+//    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
+//    protect_all(g_soinfo_allocator,PROT_READ | PROT_WRITE);      //arg1 = 0x73480D23D8
+//    protect_all(g_soinfo_links_allocator,PROT_READ | PROT_WRITE);
+//    protect_all(g_namespace_allocator,PROT_READ | PROT_WRITE);
+//    protect_all(g_namespace_list_allocator,PROT_READ | PROT_WRITE);
+//}
+//
+//void linker_unprotect(){
+//
+//
+//    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
+//    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
+//    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
+//    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
+//
+//
+//    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
+//            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
+//    protect_all(g_soinfo_allocator,PROT_READ  );
+//    protect_all(g_soinfo_links_allocator,PROT_READ  );
+//    protect_all(g_namespace_allocator,PROT_READ  );
+//    protect_all(g_namespace_list_allocator,PROT_READ  );
+//}
 
 
 soinfo* soinfo_alloc(ApkNativeInfo &apkNativeInfo){
@@ -371,13 +371,18 @@ void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
 
-void LoadTask::hideso() {
+//void LoadTask::hideso() {
+//
+//    solist_remove_soinfo(this->get_soinfo());
+//
+//}
 
-    solist_remove_soinfo(this->get_soinfo());
 
-}
 
-jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
+
+
+
+jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
 
     jobject currentDexLoad = nullptr;
     auto classloader = env->FindClass("java/lang/ClassLoader");
@@ -396,14 +401,7 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     std::vector<LoadTask*> load_tasks;
     std::vector<jobject> load_dexs;
-    mz_zip_archive zip_archive;
-    memset(&zip_archive, 0, sizeof(zip_archive));
 
-    mz_bool status = mz_zip_reader_init_file(&zip_archive, apkSource, 0);
-    if (!status) {
-        printf("Could not initialize zip reader.\n");
-        return nullptr;
-    }
     std::vector<ApkNativeInfo> vec_apkNativeInfo;
     int file_count = (int)mz_zip_reader_get_num_files(&zip_archive);
     for (int i = 0; i < file_count; i++) {
@@ -464,7 +462,7 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
     if (currentDexLoad != nullptr ) {
 
         jobject g_currentDexLoad =  env->NewGlobalRef(currentDexLoad);
-        linker_protect();
+//        linker_protect();
         for (size_t i = 0; i<load_tasks.size(); ++i) {
 
             LoadTask* task = load_tasks[i];
@@ -495,10 +493,10 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
         for (auto&& task : load_tasks) {
             task->soload(load_tasks, env);
             task->init_call(env, g_currentDexLoad);
-            task->hideso();
+//            task->hideso();
         }
 
-        linker_unprotect();
+//        linker_unprotect();
         env->DeleteGlobalRef(g_currentDexLoad);
         return currentDexLoad;
     } else{
@@ -509,9 +507,55 @@ jobject hideLoadApkModule(JNIEnv *env, char * apkSource){
 
 
 
+jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource){
 
 
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
 
+    mz_bool status = mz_zip_reader_init_file(&zip_archive, apkSource, 0);
+    if (!status) {
+        printf("Could not initialize zip reader.\n");
+        return nullptr;
+    }
+    return hideLoadApkModule(env,zip_archive);
+}
+
+
+jobject memhideLoadApkModule(JNIEnv *env, char * apkSource) {
+
+    unsigned char* zip_data = NULL;
+    size_t zip_size;
+
+    FILE* file = fopen(apkSource, "rb");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        zip_size = ftell(file);
+        rewind(file);
+
+        zip_data = (unsigned char*)malloc(zip_size);
+        if (zip_data) {
+            if (fread(zip_data, 1, zip_size, file) != zip_size) {
+                free(zip_data);
+                zip_data = NULL;
+            }
+        }
+        fclose(file);
+    }
+
+    // 使用 miniz 库解压缩内存中的 zip 文件
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
+    mz_bool status = mz_zip_reader_init_mem(&zip_archive, zip_data, zip_size, 0);
+    if (!status) {
+        printf("Could not initialize zip reader.\n");
+        return nullptr;
+    }
+    jobject resutl_classloader = hideLoadApkModule(env,zip_archive);
+    free(zip_data); // 释放内存
+    return resutl_classloader;
+
+}
 
 
 

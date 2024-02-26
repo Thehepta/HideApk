@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                customhideApkLoad(applicationInfo.sourceDir);
+                customMemhideApkLoad(applicationInfo.sourceDir);
             }
         });
 
@@ -127,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private native void customhideApkLoad(String s);
+    private native void customFilehideApkLoad(String s);
+    private native void customMemhideApkLoad(String s);
     private native ClassLoader GethideApkLoad(String s);
     private native void customhideSoLoad(String libnamePath);
 
