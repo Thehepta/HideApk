@@ -93,10 +93,29 @@ JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_customMemhideApkLoad(JNIEnv *env, jobject thiz, jstring s) {
 
     LOGE("Java_com_hepta_hideapk_MainActivity_customMemhideApkLoad");
-    char* pkgName = const_cast<char *>(env->GetStringUTFChars(s, 0));
+    char* apkSource = const_cast<char *>(env->GetStringUTFChars(s, 0));
     auto classloader = env->FindClass("java/lang/ClassLoader");
 
-    jobject g_currentDexLoad = memhideLoadApkModule(env, pkgName);
+
+    unsigned char* zip_data = NULL;
+    size_t zip_size;
+
+    FILE* file = fopen(apkSource, "rb");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        zip_size = ftell(file);
+        rewind(file);
+
+        zip_data = (unsigned char*)malloc(zip_size);
+        if (zip_data) {
+            if (fread(zip_data, 1, zip_size, file) != zip_size) {
+                free(zip_data);
+                zip_data = NULL;
+            }
+        }
+        fclose(file);
+    }
+    jobject g_currentDexLoad = memhideLoadApkModule(env, zip_data, zip_size);
     jmethodID method_loadClass = env->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
     jstring LoadEntry_cls = env->NewStringUTF("com.hepta.fridaload.LoadEntry");
     jobject LoadEntrycls_obj = env->CallObjectMethod(g_currentDexLoad,method_loadClass,LoadEntry_cls);

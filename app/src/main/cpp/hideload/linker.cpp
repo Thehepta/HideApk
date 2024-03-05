@@ -522,26 +522,8 @@ jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource){
 }
 
 
-jobject memhideLoadApkModule(JNIEnv *env, char * apkSource) {
+jobject memhideLoadApkModule(JNIEnv *env, unsigned char *zip_data, size_t zip_size) {
 
-    unsigned char* zip_data = NULL;
-    size_t zip_size;
-
-    FILE* file = fopen(apkSource, "rb");
-    if (file) {
-        fseek(file, 0, SEEK_END);
-        zip_size = ftell(file);
-        rewind(file);
-
-        zip_data = (unsigned char*)malloc(zip_size);
-        if (zip_data) {
-            if (fread(zip_data, 1, zip_size, file) != zip_size) {
-                free(zip_data);
-                zip_data = NULL;
-            }
-        }
-        fclose(file);
-    }
 
     // 使用 miniz 库解压缩内存中的 zip 文件
     mz_zip_archive zip_archive;

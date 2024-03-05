@@ -43,7 +43,7 @@ struct ApkNativeInfo {
     int fd;
 };
 jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource);
-jobject memhideLoadApkModule(JNIEnv *env, char * apkSource);
+jobject memhideLoadApkModule(JNIEnv *env, unsigned char *apkSource, size_t i);
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 
