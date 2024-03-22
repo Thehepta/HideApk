@@ -17,11 +17,6 @@
 #include <sys/utsname.h>
 #include "jni_hook.h"
 
-android_namespace_t* g_default_namespace = static_cast<android_namespace_t *>(linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl_g_default_namespace"));
-
-//soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) linkerResolveElfInternalSymbol(
-//        get_android_linker_path(), "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
 
 soinfo* (*solist_get_head)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
         get_android_linker_path(), "__dl__Z15solist_get_headv");
@@ -32,8 +27,6 @@ soinfo* (*solist_get_somain)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
 char* (*soinfo_get_soname)(soinfo*) = (char* (*)(soinfo*)) linkerResolveElfInternalSymbol(
         get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
 
-//bool (*solist_remove_soinfo)(soinfo*) = (bool  (*)(soinfo*)) linkerResolveElfInternalSymbol(
-//        get_android_linker_path(), "__dl__Z20solist_remove_soinfoP6soinfo");
 
 
 
@@ -138,108 +131,6 @@ soinfo* find_containing_library(const void* p) {
     return nullptr;
 }
 
-//void linker_protect(){
-//
-//
-//    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
-//    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
-//    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
-//    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
-//
-//
-//    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
-//    protect_all(g_soinfo_allocator,PROT_READ | PROT_WRITE);      //arg1 = 0x73480D23D8
-//    protect_all(g_soinfo_links_allocator,PROT_READ | PROT_WRITE);
-//    protect_all(g_namespace_allocator,PROT_READ | PROT_WRITE);
-//    protect_all(g_namespace_list_allocator,PROT_READ | PROT_WRITE);
-//}
-//
-//void linker_unprotect(){
-//
-//
-//    void* g_soinfo_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL18g_soinfo_allocator"));
-//    void* g_soinfo_links_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL24g_soinfo_links_allocator"));
-//    void* g_namespace_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL21g_namespace_allocator"));
-//    void* g_namespace_list_allocator = static_cast<void *>(linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZL26g_namespace_list_allocator"));
-//
-//
-//    void (*protect_all)(void*,int prot) = (void (*)(void*,int prot)) linkerResolveElfInternalSymbol(
-//            get_android_linker_path(), "__dl__ZN20LinkerBlockAllocator11protect_allEi");
-//    protect_all(g_soinfo_allocator,PROT_READ  );
-//    protect_all(g_soinfo_links_allocator,PROT_READ  );
-//    protect_all(g_namespace_allocator,PROT_READ  );
-//    protect_all(g_namespace_list_allocator,PROT_READ  );
-//}
-
-
-soinfo* soinfo_alloc(ApkNativeInfo &apkNativeInfo){
-
-
-    soinfo* (*soinf_alloc_fun)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t ) = (soinfo* (*)(android_namespace_t* , const char* ,const struct stat* , off64_t ,uint32_t )) linkerResolveElfInternalSymbol(
-            get_android_linker_path(), "__dl__Z12soinfo_allocP19android_namespace_tPKcPK4statlj");
-    soinfo* si = soinf_alloc_fun(g_default_namespace, apkNativeInfo.libname.c_str(), nullptr, 0, RTLD_GLOBAL);
-    return si;
-}
-
-
-//void* LoadNativeSoByMem(ApkNativeInfo &apkNativeInfo){
-//
-//
-//
-//
-//
-//
-//
-////    LoadTask task = new LoadTask();
-//
-//
-//    soinfo * si_ = soinfo_alloc(apkNativeInfo);
-//    if (si_ == nullptr) {
-//        return nullptr;
-//    }
-//
-////    task->set_soinfo(si);
-//
-//
-//
-//    ElfReader * elf_reader = new ElfReader();
-//    apkNativeInfo.libname = apkNativeInfo.file_stat.m_filename;
-//
-//    if(!elf_reader->Read(apkNativeInfo.libname.c_str(),apkNativeInfo.fd,0,apkNativeInfo.file_stat.m_uncomp_size)){
-//        LOGE("elf_reader Read failed");
-//        return nullptr;
-//    }
-//
-//
-//
-//    address_space_params  default_params;
-//    elf_reader->Load(&default_params);
-//
-//
-//
-//    si_->base = elf_reader->load_start();
-//    si_->size = elf_reader->load_size();
-//    si_->set_mapped_by_caller(elf_reader->is_mapped_by_caller());
-//    si_->load_bias = elf_reader->load_bias();
-//    si_->phnum = elf_reader->phdr_count();
-//    si_->phdr = elf_reader->loaded_phdr();
-//
-//    si_->prelink_image();
-//    si_->set_dt_flags_1(si_->get_dt_flags_1() | DF_1_GLOBAL);
-//    si_->call_constructors();
-//
-//    LOGE("%s","successful");
-//}
-
 
 int memfd_create(const char* name, unsigned int flags) {
     // Check kernel version supports memfd_create(). Some older kernels segfault executing
@@ -341,7 +232,7 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
         soinfo* system_si = find_library(load_tasks, name);
         soinfo* custom_si = new soinfo();
         custom_si->transform(system_si);
-        SymbolLookupLib SyLib = custom_si->get_lookup_lib();
+        SymbolLookupLib SyLib = custom_si->get_lookup_lib(true);
         lookup_list.addSymbolLib(SyLib);
     });
 
@@ -349,22 +240,17 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     load(&default_params);
     get_soinfo()->prelink_image();
     get_soinfo()->set_dt_flags_1(get_soinfo()->get_dt_flags_1() | DF_1_GLOBAL);
-    lookup_list.addSymbolLib(get_soinfo()->get_lookup_lib());
+    lookup_list.addSymbolLib(get_soinfo()->get_lookup_lib(false));
     get_soinfo()->link_image(lookup_list);
     get_soinfo()->set_linked();
     get_soinfo()->call_constructors();
 
-//    auto it =     lookup_list.getVectorSymLib().begin();
-//    auto end = lookup_list.getVectorSymLib().end();
-//    std::vector<SymbolLookupLib>::iterator  lib ;
-//
-//    while (true) {
-//        if (it == end) {
-//            return;
+//    for(auto lib = lookup_list.getVectorSymLib().begin();lib != lookup_list.getVectorSymLib().end();lib++){
+//        if(lib->system_sonifo){
+//            delete lib->si_ ;
 //        }
-//        delete lib->si_ ;
-//        lib = it++;
 //    }
+
 
 }
 
@@ -441,7 +327,7 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
                 return nullptr;
             }
 
-            LoadTask* task =  LoadTask::create(file_stat.m_filename, nullptr,g_default_namespace, &readers_map);
+            LoadTask* task =  LoadTask::create(file_stat.m_filename, nullptr, nullptr, &readers_map);
             task->set_fd(fd, false);
             task->set_file_offset(0);
             task->set_file_size(file_stat.m_uncomp_size);
@@ -482,7 +368,7 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
 
             LoadTask* task = load_tasks[i];
 //            soinfo* si = soinf_alloc_fun(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
-            soinfo* si = new soinfo(g_default_namespace, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+            soinfo* si = new soinfo(nullptr, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
             if (si == nullptr) {
                 return nullptr;
             }

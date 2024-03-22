@@ -779,7 +779,7 @@ size_t soinfo::get_verdef_cnt() const {
     return 0;
 }
 
-SymbolLookupLib soinfo::get_lookup_lib() {
+SymbolLookupLib soinfo::get_lookup_lib(bool system_sonifo) {
     SymbolLookupLib result {};
     result.si_ = this;
 
@@ -801,6 +801,7 @@ SymbolLookupLib soinfo::get_lookup_lib() {
     result.gnu_chain_ = gnu_chain_;
     result.gnu_nbucket_ = gnu_nbucket_;
     result.gnu_bucket_ = gnu_bucket_;
+    result.system_sonifo = system_sonifo;
 
     return result;
 }

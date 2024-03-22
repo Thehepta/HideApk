@@ -50,6 +50,4 @@ void android_11_soinfo_transorm(soinfo* si, soinfo_11_transform *si_11){
     si->verdef_cnt_ = si_11->verdef_cnt_;
     si->verneed_ptr_ = si_11->verneed_ptr_;
     si->verneed_cnt_ = si_11->verneed_cnt_;
-
-
 }

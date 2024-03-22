@@ -258,7 +258,7 @@ public:
 //    void generate_handle();
 //    void* to_handle();
 
-    SymbolLookupLib get_lookup_lib();
+    SymbolLookupLib get_lookup_lib(bool system_sonifo);
     void transform(soinfo*);
 
 private:
