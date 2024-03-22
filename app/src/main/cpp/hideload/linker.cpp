@@ -338,9 +338,10 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
 
     for_each_dt_needed(get_elf_reader(), [&](const char* name) {
         LOGE("NEED name: %s",name);
-        soinfo* si = find_library(load_tasks, name);
-//        get_soinfo()->add_child(si);
-        SymbolLookupLib SyLib = si->get_lookup_lib();
+        soinfo* system_si = find_library(load_tasks, name);
+        soinfo* custom_si = new soinfo();
+        custom_si->transform(system_si);
+        SymbolLookupLib SyLib = custom_si->get_lookup_lib();
         lookup_list.addSymbolLib(SyLib);
     });
 
@@ -352,6 +353,18 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     get_soinfo()->link_image(lookup_list);
     get_soinfo()->set_linked();
     get_soinfo()->call_constructors();
+
+//    auto it =     lookup_list.getVectorSymLib().begin();
+//    auto end = lookup_list.getVectorSymLib().end();
+//    std::vector<SymbolLookupLib>::iterator  lib ;
+//
+//    while (true) {
+//        if (it == end) {
+//            return;
+//        }
+//        delete lib->si_ ;
+//        lib = it++;
+//    }
 
 }
 
@@ -370,6 +383,8 @@ void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
     void * linkerJniInvokeInterface = jni_hook_init(vm,g_currentDexLoad);
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
 }
+
+
 
 //void LoadTask::hideso() {
 //

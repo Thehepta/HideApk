@@ -96,7 +96,6 @@ public:
 #endif
 
     soinfo* next;
-private:
     uint32_t flags_;
 
     const char* strtab_;
@@ -161,35 +160,36 @@ public:
 public:
     soinfo(android_namespace_t* ns, const char* name, const struct stat* file_stat,
            off64_t file_offset, int rtld_flags);
-    ~soinfo();
+//    ~soinfo();
 
+    soinfo(){};
     void call_constructors();
-    void call_destructors();
-    void call_pre_init_constructors();
+//    void call_destructors();
+//    void call_pre_init_constructors();
     bool prelink_image();
     bool link_image(SymbolLookupList& lookup_list);
 
-    bool protect_relro();
+//    bool protect_relro();
 
     void add_child(soinfo* child);
-    void remove_all_links();
+//    void remove_all_links();
 
-    ino_t get_st_ino() const;
-    dev_t get_st_dev() const;
-    off64_t get_file_offset() const;
-
-    uint32_t get_rtld_flags() const;
+//    ino_t get_st_ino() const;
+//    dev_t get_st_dev() const;
+//    off64_t get_file_offset() const;
+//
+//    uint32_t get_rtld_flags() const;
     uint32_t get_dt_flags_1() const;
     void set_dt_flags_1(uint32_t dt_flags_1);
 
     soinfo_list_t& get_children();
     const soinfo_list_t& get_children() const;
 
-    soinfo_list_t& get_parents();
+//    soinfo_list_t& get_parents();
 
     const ElfW(Sym)* find_symbol_by_name(SymbolName& symbol_name, const version_info* vi) const;
 
-    ElfW(Sym)* find_symbol_by_address(const void* addr);
+//    ElfW(Sym)* find_symbol_by_address(const void* addr);
 
     ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
         if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
@@ -200,7 +200,7 @@ public:
     }
 
     const char* get_string(ElfW(Word) index) const;
-    bool can_unload() const;
+//    bool can_unload() const;
     bool is_gnu_hash() const;
 
     bool inline has_min_version(uint32_t min_version __unused) const {
@@ -216,23 +216,23 @@ public:
     }
 
     bool is_linked() const;
-    bool is_linker() const;
-    bool is_main_executable() const;
+//    bool is_linker() const;
+//    bool is_main_executable() const;
 
     void set_linked();
-    void set_linker_flag();
-    void set_main_executable();
-    void set_nodelete();
+//    void set_linker_flag();
+//    void set_main_executable();
+//    void set_nodelete();
 
-    size_t increment_ref_count();
-    size_t decrement_ref_count();
-    size_t get_ref_count() const;
+//    size_t increment_ref_count();
+//    size_t decrement_ref_count();
+//    size_t get_ref_count() const;
 
-    soinfo* get_local_group_root() const;
+//    soinfo* get_local_group_root() const;
 
     void set_soname(const char* soname);
     const char* get_soname() const;
-    void set_realpath(const char* path);
+//    void set_realpath(const char* path);
     const char* get_realpath() const;
     const ElfW(Versym)* get_versym(size_t n) const;
     ElfW(Addr) get_verneed_ptr() const;
@@ -240,41 +240,40 @@ public:
     ElfW(Addr) get_verdef_ptr() const;
     size_t get_verdef_cnt() const;
 
-    int get_target_sdk_version() const;
 
     void set_dt_runpath(const char *);
-    const std::vector<std::string>& get_dt_runpath() const;
+//    const std::vector<std::string>& get_dt_runpath() const;
     android_namespace_t* get_primary_namespace();
-    void add_secondary_namespace(android_namespace_t* secondary_ns);
-    android_namespace_list_t& get_secondary_namespaces();
+//    void add_secondary_namespace(android_namespace_t* secondary_ns);
+//    android_namespace_list_t& get_secondary_namespaces();
 
 //    soinfo_tls* get_tls() const {
 //        return has_min_version(5) ? tls_.get() : nullptr;
 //    }
 
     void set_mapped_by_caller(bool reserved_map);
-    bool is_mapped_by_caller() const;
+//    bool is_mapped_by_caller() const;
 
-    uintptr_t get_handle() const;
-    void generate_handle();
-    void* to_handle();
+//    uintptr_t get_handle() const;
+//    void generate_handle();
+//    void* to_handle();
 
     SymbolLookupLib get_lookup_lib();
+    void transform(soinfo*);
 
 private:
-    bool is_image_linked() const;
-    void set_image_linked();
+//    bool is_image_linked() const;
+//    void set_image_linked();
 
     const ElfW(Sym)* gnu_lookup(SymbolName& symbol_name, const version_info* vi) const;
     const ElfW(Sym)* elf_lookup(SymbolName& symbol_name, const version_info* vi) const;
-    ElfW(Sym)* gnu_addr_lookup(const void* addr);
-    ElfW(Sym)* elf_addr_lookup(const void* addr);
+//    ElfW(Sym)* gnu_addr_lookup(const void* addr);
+//    ElfW(Sym)* elf_addr_lookup(const void* addr);
 
 public:
     bool lookup_version_info(const VersionTracker& version_tracker, ElfW(Word) sym,
                              const char* sym_name, const version_info** vi);
 
-private:
     bool relocate(const SymbolLookupList& lookup_list);
     bool relocate_relr();
     void apply_relr_reloc(ElfW(Addr) offset);
@@ -335,7 +334,7 @@ private:
     android_namespace_list_t secondary_namespaces_;   // 这些linklist 里面有两个指针，长度是两个指针的长度
     uintptr_t handle_;
 
-    friend soinfo* get_libdl_info(const soinfo& linker_si);
+//    friend soinfo* get_libdl_info(const soinfo& linker_si);
 
     // version >= 4
     ElfW(Relr)* relr_;

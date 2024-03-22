@@ -12,6 +12,7 @@
 #include "linker.h"
 #include "elf_symbol_resolver.h"
 #include "linker_debug.h"
+#include "soinfo_11_transform.h"
 int g_argc = 0;
 char** g_argv = nullptr;
 char** g_envp = nullptr;
@@ -1002,6 +1003,19 @@ soinfo::soinfo(android_namespace_t *ns, const char *name, const struct stat *fil
 
     this->rtld_flags_ = rtld_flags;
 
+}
+
+void soinfo::transform(soinfo * si) {
+    if(android_get_device_api_level() == 33){              //android 13
+
+    } else if (android_get_device_api_level() == 32){      //android 12l
+
+    } else if (android_get_device_api_level() == 31){      //android 12
+
+    } else if (android_get_device_api_level() == 30){      //android 11
+
+    }
+    android_11_soinfo_transorm(this, reinterpret_cast<soinfo_11_transform *>(si));
 }
 
 
