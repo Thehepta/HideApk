@@ -88,7 +88,6 @@ soinfo* find_all_library_byname(const char* soname){
 }
 
 soinfo* find_system_library_byname(const char* soname) {
-    LOGE("find_system_library_byname");
 
     for (soinfo* si = solist_get_head(); si != nullptr; si = si->next) {
         char* ret_name = soinfo_get_soname(si);
@@ -188,7 +187,7 @@ soinfo* find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
 //        return find_soinfo->get_soinfo();
 //
 //    }else{
-        return find_system_library_byname(soname);
+    return find_system_library_byname(soname);
 //    }
 
 }
@@ -245,13 +244,16 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     get_soinfo()->set_linked();
     get_soinfo()->call_constructors();
 
-//    for(auto lib = lookup_list.getVectorSymLib().begin();lib != lookup_list.getVectorSymLib().end();lib++){
-//        if(lib->system_sonifo){
-//            delete lib->si_ ;
-//        }
-//    }
-
-
+    auto it =     lookup_list.getVectorSymLib().begin();
+    auto end = lookup_list.getVectorSymLib().end();
+    std::vector<SymbolLookupLib>::iterator  lib ;
+    while (true) {
+        if (it == end) return;
+        lib = it++;
+        if(lib->system_sonifo){
+            delete lib->si_ ;
+        }
+    }
 }
 
 void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
