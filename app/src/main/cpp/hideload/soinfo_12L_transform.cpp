@@ -1,10 +1,12 @@
 //
 // Created by chic on 2024/3/22.
 //
-#include "soinfo_11_transform.h"
+
+#include "soinfo_12l_transform.h"
 
 
-void android_11_soinfo_transform(soinfo* si, soinfo_11_transform *si_in){
+
+void android_12l_soinfo_transform(soinfo* si, soinfo_12l_transform * si_in){
 
     si->phdr = si_in->phdr;
     si->phnum = si_in->phnum;
@@ -22,11 +24,9 @@ void android_11_soinfo_transform(soinfo* si, soinfo_11_transform *si_in){
 #if defined(USE_RELA)
     si->plt_rela_ = si_in->plt_rela_;
     si->plt_rela_count_ = si_in->plt_rela_count_;
-
     si->rela_ = si_in->rela_;
     si->rela_count_ = si_in->rela_count_;
 #endif
-
     si->preinit_array_ = si_in->preinit_array_;
     si->preinit_array_count_ = si_in->preinit_array_count_;
     si->init_array_ = si_in->init_array_;

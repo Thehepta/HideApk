@@ -1,33 +1,33 @@
 //
 // Created by chic on 2024/3/22.
 //
+#pragma once
+#include "linker_soinfo.h"
+
 
 #pragma once
 #include "linker_soinfo.h"
 
-struct soinfo_11_transform;
-
-void android_11_soinfo_transform(soinfo*, soinfo_11_transform *);
-
+struct soinfo_12l_transform;
+void android_12l_soinfo_transform(soinfo*, soinfo_12l_transform *);
 
 
 template<typename T, typename Allocator>
-class LinkedList_11 {
+class LinkedList_12l {
 public:
 private:
     LinkedListEntry<T>* head_;
     LinkedListEntry<T>* tail_;
-    DISALLOW_COPY_AND_ASSIGN(LinkedList_11);
+    DISALLOW_COPY_AND_ASSIGN(LinkedList_12l);
 };
 
 
-typedef LinkedList_11<soinfo, SoinfoListAllocator> soinfo_list_t_11;
-typedef LinkedList_11<android_namespace_t, NamespaceListAllocator> android_namespace_list_t_11;
+typedef LinkedList_12l<soinfo, SoinfoListAllocator> soinfo_list_t_12;
+typedef LinkedList_12l<android_namespace_t, NamespaceListAllocator> android_namespace_list_t_12;
 
 
 
-
-struct soinfo_11_transform{
+struct soinfo_12l_transform{
 
 #if defined(__work_around_b_24465209__)
     private:
@@ -77,10 +77,10 @@ public:
     size_t rela_count_;
 #else
     ElfW(Rel)* plt_rel_;
-    size_t plt_rel_count_;
+  size_t plt_rel_count_;
 
-    ElfW(Rel)* rel_;
-    size_t rel_count_;
+  ElfW(Rel)* rel_;
+  size_t rel_count_;
 #endif
 
     linker_ctor_function_t* preinit_array_;
@@ -126,8 +126,8 @@ public:
     ino_t st_ino_;
 
     // dependency graph
-    soinfo_list_t_11 children_;
-    soinfo_list_t_11 parents_;
+    soinfo_list_t_12 children_;
+    soinfo_list_t_12 parents_;
 
     // version >= 1
     off64_t file_offset_;
@@ -149,7 +149,7 @@ public:
     uint8_t* android_relocs_;
     size_t android_relocs_size_;
 
-    const char* soname_;
+    std::string soname_;
     std::string realpath_;
 
     const ElfW(Versym)* versym_;
@@ -164,8 +164,8 @@ public:
 
     // version >= 3
     std::vector<std::string> dt_runpath_;
-    android_namespace_t* primary_namespace_;
-    android_namespace_list_t_11 secondary_namespaces_;
+    void* primary_namespace_;
+    android_namespace_list_t_12 secondary_namespaces_;
     uintptr_t handle_;
 
 
@@ -173,7 +173,21 @@ public:
     ElfW(Relr)* relr_;
     size_t relr_count_;
 
-    // version >= 5
+//    // version >= 5
 //    std::unique_ptr<soinfo_tls> tls_;
 //    std::vector<TlsDynamicResolverArg> tlsdesc_args_;
+//
+//    // version >= 6
+//    ElfW(Addr) gap_start_;
+//    size_t gap_size_;
+
+
 };
+
+
+
+
+
+
+
+
