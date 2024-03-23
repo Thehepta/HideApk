@@ -4,10 +4,6 @@
 #pragma once
 #include "linker_soinfo.h"
 
-
-#pragma once
-#include "linker_soinfo.h"
-
 struct soinfo_12l_transform;
 void android_12l_soinfo_transform(soinfo*, soinfo_12l_transform *);
 
@@ -18,12 +14,11 @@ public:
 private:
     LinkedListEntry<T>* head_;
     LinkedListEntry<T>* tail_;
-    DISALLOW_COPY_AND_ASSIGN(LinkedList_12l);
 };
 
 
-typedef LinkedList_12l<soinfo, SoinfoListAllocator> soinfo_list_t_12;
-typedef LinkedList_12l<android_namespace_t, NamespaceListAllocator> android_namespace_list_t_12;
+typedef LinkedList_12l<soinfo, SoinfoListAllocator> soinfo_list_t_12l;
+typedef LinkedList_12l<android_namespace_t, NamespaceListAllocator> android_namespace_list_t_12l;
 
 
 
@@ -126,8 +121,8 @@ public:
     ino_t st_ino_;
 
     // dependency graph
-    soinfo_list_t_12 children_;
-    soinfo_list_t_12 parents_;
+    soinfo_list_t_12l children_;
+    soinfo_list_t_12l parents_;
 
     // version >= 1
     off64_t file_offset_;
@@ -165,7 +160,7 @@ public:
     // version >= 3
     std::vector<std::string> dt_runpath_;
     void* primary_namespace_;
-    android_namespace_list_t_12 secondary_namespaces_;
+    android_namespace_list_t_12l secondary_namespaces_;
     uintptr_t handle_;
 
 

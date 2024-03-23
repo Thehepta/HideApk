@@ -323,7 +323,7 @@ public:
     ElfW(Addr) verdef_ptr_;
     size_t verdef_cnt_;
 
-    ElfW(Addr) verneed_ptr_;
+    ElfW(Addr) verneed_ptr_;    // 版本需求表（Version Needed Table
     size_t verneed_cnt_;
 
     int target_sdk_version_;
