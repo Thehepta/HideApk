@@ -15,13 +15,51 @@
 #include "soinfo_11_transform.h"
 #include "soinfo_12_transform.h"
 #include "soinfo_12L_transform.h"
+#include "sys/ifunc.h"
+#include <sys/auxv.h>
 
 int g_argc = 0;
 char** g_argv = nullptr;
 char** g_envp = nullptr;
 
-ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr) =(ElfW(Addr) (*)(ElfW(Addr) resolver_addr)) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__Z19call_ifunc_resolvery");
+
+ElfW(Addr) __bionic_call_ifunc_resolver(ElfW(Addr) resolver_addr) {
+#if defined(__aarch64__)
+    typedef ElfW(Addr) (*ifunc_resolver_t)(uint64_t, __ifunc_arg_t*);
+    static __ifunc_arg_t arg;
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+        arg._size = sizeof(__ifunc_arg_t);
+        arg._hwcap = getauxval(AT_HWCAP);
+        arg._hwcap2 = getauxval(AT_HWCAP2);
+    }
+    return reinterpret_cast<ifunc_resolver_t>(resolver_addr)(arg._hwcap | _IFUNC_ARG_HWCAP, &arg);
+#elif defined(__arm__)
+    typedef ElfW(Addr) (*ifunc_resolver_t)(unsigned long);
+  static unsigned long hwcap = getauxval(AT_HWCAP);
+  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)(hwcap);
+#elif defined(__riscv)
+  // The third argument is currently unused, but reserved for future
+  // expansion. If we pass nullptr from the beginning, it'll be easier
+  // to recognize if/when we pass actual data (and matches glibc).
+  typedef ElfW(Addr) (*ifunc_resolver_t)(uint64_t, __riscv_hwprobe_t, void*);
+  static uint64_t hwcap = getauxval(AT_HWCAP);
+  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)(hwcap, __riscv_hwprobe, nullptr);
+#else
+  typedef ElfW(Addr) (*ifunc_resolver_t)(void);
+  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)();
+#endif
+}
+
+
+ElfW(Addr) call_ifunc_resolver(ElfW(Addr) resolver_addr) {
+
+    ElfW(Addr) ifunc_addr = __bionic_call_ifunc_resolver(resolver_addr);
+    LOGE("Called ifunc_resolver@%p. The result is %p",reinterpret_cast<void *>(resolver_addr), reinterpret_cast<void*>(ifunc_addr));
+
+    return ifunc_addr;
+}
 
 #if defined(__LP64__)
 static constexpr const char* kLibPath = "lib64";
@@ -1010,15 +1048,39 @@ soinfo::soinfo(android_namespace_t *ns, const char *name, const struct stat *fil
 }
 
 void soinfo::transform(soinfo * si) {
-    if(android_get_device_api_level() == 33){              //android 13
 
-    } else if (android_get_device_api_level() == 32){      //android 12l
-        android_12l_soinfo_transform(this, reinterpret_cast<soinfo_12l_transform *>(si));
-    } else if (android_get_device_api_level() == 31){      //android 12
-        android_12_soinfo_transform(this, reinterpret_cast<soinfo_12_transform *>(si));
-    } else if (android_get_device_api_level() == 30){      //android 11
-        android_11_soinfo_transform(this, reinterpret_cast<soinfo_11_transform *>(si));
+//第一种方式通过soinfo的字段的前几个位置不变的属性，计算出soinfo结构体后面的随着版本导致结构体变动的属性
+//相比第二种有性能损耗，但是更优雅，兼容性更强，理论上兼容所有的版本
+    this->base = si->base;
+    this->size = si->size;
+    this->flags_ = 0;
+    this->load_bias = si->load_bias;
+    this->phnum = si->phnum;
+    this->phdr = si->phdr;
+    this->prelink_image();
+
+
+    //寻找对应android版本soinfo的结构体，然后将soinfo强转成对应版本的，然后将属性赋值给当前使用的这个soinfo
+    //每兼容一个版本就要多写一个结构体，但是速度快
+//    if(android_get_device_api_level() == 33){              //android 13
+//
+//    } else if (android_get_device_api_level() == 32){      //android 12l
+//        android_12l_soinfo_transform(this, reinterpret_cast<soinfo_12l_transform *>(si));
+//    } else if (android_get_device_api_level() == 31){      //android 12
+//        android_12_soinfo_transform(this, reinterpret_cast<soinfo_12_transform *>(si));
+//    } else if (android_get_device_api_level() == 30){      //android 11
+//        android_11_soinfo_transform(this, reinterpret_cast<soinfo_11_transform *>(si));
+//    }
+
+
+}
+
+ElfW(Addr) soinfo::resolve_symbol_address(const ElfW(Sym)* s) const  {
+    if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
+        return call_ifunc_resolver(s->st_value + load_bias);
     }
+
+    return static_cast<ElfW(Addr)>(s->st_value + load_bias);
 }
 
 

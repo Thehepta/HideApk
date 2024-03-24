@@ -12,7 +12,6 @@
 typedef void (*linker_dtor_function_t)();
 typedef void (*linker_ctor_function_t)(int, char**, char**);
 
-extern ElfW(Addr) (*call_ifunc_resolver)(ElfW(Addr) resolver_addr);
 
 
 #define SUPPORTED_DT_FLAGS_1 (DF_1_NOW | DF_1_GLOBAL | DF_1_NODELETE | DF_1_PIE)
@@ -189,15 +188,8 @@ public:
 
     const ElfW(Sym)* find_symbol_by_name(SymbolName& symbol_name, const version_info* vi) const;
 
-//    ElfW(Sym)* find_symbol_by_address(const void* addr);
 
-    ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const {
-        if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
-            return call_ifunc_resolver(s->st_value + load_bias);
-        }
-
-        return static_cast<ElfW(Addr)>(s->st_value + load_bias);
-    }
+    ElfW(Addr) resolve_symbol_address(const ElfW(Sym)* s) const;
 
     const char* get_string(ElfW(Word) index) const;
 //    bool can_unload() const;

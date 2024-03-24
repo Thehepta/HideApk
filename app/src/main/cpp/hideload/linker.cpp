@@ -230,6 +230,7 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
         LOGE("NEED name: %s",name);
         soinfo* system_si = find_library(load_tasks, name);
         soinfo* custom_si = new soinfo();
+        custom_si->set_soname(name);
         custom_si->transform(system_si);
         SymbolLookupLib SyLib = custom_si->get_lookup_lib(true);
         lookup_list.addSymbolLib(SyLib);
