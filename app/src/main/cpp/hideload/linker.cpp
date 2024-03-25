@@ -212,29 +212,23 @@ const char* fix_dt_needed(const char* dt_needed, const char* sopath __unused) {
 }
 
 
-template<typename F>
-static void for_each_dt_needed(const ElfReader& elf_reader, F action) {
-    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
-        if (d->d_tag == DT_NEEDED) {
-            action(fix_dt_needed(elf_reader.get_string(d->d_un.d_val), elf_reader.name()));
-        }
-    }
-}
-
-
 void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
 
     SymbolLookupList lookup_list;
 
-    for_each_dt_needed(get_elf_reader(), [&](const char* name) {
-        LOGE("NEED name: %s",name);
-        soinfo* system_si = find_library(load_tasks, name);
-        soinfo* custom_si = new soinfo();
-        custom_si->set_soname(name);
-        custom_si->transform(system_si);
-        SymbolLookupLib SyLib = custom_si->get_lookup_lib(true);
-        lookup_list.addSymbolLib(SyLib);
-    });
+    for (const ElfW(Dyn)* d = get_elf_reader().dynamic(); d->d_tag != DT_NULL; ++d) {
+        if (d->d_tag == DT_NEEDED) {
+            const char* name = fix_dt_needed(get_elf_reader().get_string(d->d_un.d_val), get_elf_reader().name());
+            LOGE("NEED name: %s",name);
+            soinfo* system_si = find_library(load_tasks, name);
+            soinfo *custom_si  = new soinfo();
+            custom_si->set_soname(name);
+            custom_si->transform(system_si);
+            SymbolLookupLib SyLib = custom_si->get_lookup_lib(true);
+            lookup_list.addSymbolLib(SyLib);
+        }
+    }
+
 
     address_space_params  default_params;
     load(&default_params);
@@ -251,9 +245,9 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     while (true) {
         if (it == end) return;
         lib = it++;
-        if(lib->system_sonifo){
+//        if(lib->system_sonifo){
             delete lib->si_ ;
-        }
+//        }
     }
 }
 
@@ -271,6 +265,11 @@ void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
     pEnv->GetJavaVM(reinterpret_cast<JavaVM **>(&vm));
     void * linkerJniInvokeInterface = jni_hook_init(vm,g_currentDexLoad);
     JNI_OnLoadFn(static_cast<JavaVM *>(linkerJniInvokeInterface), nullptr);
+}
+
+void LoadTask::hack() {
+    ElfReader & elfReader = get_elf_reader();
+    elfReader.loaded_phdr();
 }
 
 
@@ -330,7 +329,7 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
                 return nullptr;
             }
 
-            LoadTask* task =  LoadTask::create(file_stat.m_filename, nullptr, nullptr, &readers_map);
+            LoadTask* task =  new LoadTask(file_stat.m_filename, nullptr, nullptr, &readers_map);
             task->set_fd(fd, false);
             task->set_file_offset(0);
             task->set_file_size(file_stat.m_uncomp_size);
@@ -397,7 +396,8 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
         for (auto&& task : load_tasks) {
             task->soload(load_tasks, env);
             task->init_call(env, g_currentDexLoad);
-//            task->hideso();
+            task->hack();
+            delete task;
         }
 
 //        linker_unprotect();
