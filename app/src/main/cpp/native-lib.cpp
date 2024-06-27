@@ -3,7 +3,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <android/log.h>
-#include "hideload/linker.h"
+#include "hideload/entry.h"
 #define LOG_TAG "Native"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 

@@ -215,15 +215,15 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
     }
 }
 
-void LoadTask::init_call(JNIEnv *pEnv, jobject g_currentDexLoad) {
+void call_JNI_OnLoad(soinfo *si, JNIEnv *pEnv, jobject g_currentDexLoad) {
 
 
     SymbolName symbol_JNI_OnLoad("JNI_OnLoad");
-    const ElfW(Sym)* sym = get_soinfo()->find_symbol_by_name(symbol_JNI_OnLoad, nullptr);
+    const ElfW(Sym)* sym = si->find_symbol_by_name(symbol_JNI_OnLoad, nullptr);
     if(sym== nullptr){
         return;
     }
-    int(*JNI_OnLoadFn)(JavaVM*, void*) = ( int(*)(JavaVM*, void*))(sym->st_value+get_soinfo()->load_bias);
+    int(*JNI_OnLoadFn)(JavaVM*, void*) = ( int(*)(JavaVM*, void*))(sym->st_value + si->load_bias);
 
     JavaVM *vm;
     pEnv->GetJavaVM(reinterpret_cast<JavaVM **>(&vm));

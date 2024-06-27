@@ -42,8 +42,7 @@ struct ApkNativeInfo {
     std::string libname;
     int fd;
 };
-jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource);
-jobject memhideLoadApkModule(JNIEnv *env, unsigned char *apkSource, size_t i);
+
 
 #define PAGE_START(x) ((x) & PAGE_MASK)
 
@@ -182,8 +181,6 @@ public:
     }
 
     void soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv);
-    void init_call(JNIEnv *pEnv, jobject pJobject);
-//    void hideso();
 
     void hack();
 
@@ -241,6 +238,8 @@ struct linker_JavaVM:public _JavaVM{
 //    { return functions->GetEnv(this, env, version); }
 
 };
+
+void call_JNI_OnLoad(soinfo *si, JNIEnv *pEnv, jobject g_currentDexLoad);
 
 
 
