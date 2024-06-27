@@ -46,6 +46,7 @@ add_library( # Sets the name of the library.
         soinfo_12_transform.cpp
         soinfo_11_transform.cpp
         soinfo_12L_transform.cpp
+        entry.cpp
         )
 
 
