@@ -245,5 +245,19 @@ void *hide_dlopen(   const char *file_data){
 //    task->soload(nullptr, nullptr);
 //    task->init_call(env, g_currentDexLoad);
     task->hack();
+    soinfo *ret_si = task->get_soinfo();
     delete task;
+    return ret_si;
+}
+
+void *hide_dlsym(soinfo*si,char* syn_name) {
+    SymbolName symbol_name(syn_name);
+
+
+    const ElfW(Sym)* sym = si->find_symbol_by_name(symbol_name, nullptr);;
+    if(sym== nullptr){
+        return nullptr;
+    }
+    void *sym_func_addr = reinterpret_cast<void *>(sym->st_value + si->load_bias);
+    return sym_func_addr;
 }
