@@ -1,4 +1,12 @@
 #include <android/log.h>
+#include <asm-generic/fcntl.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <zconf.h>
+#include <asm-generic/mman.h>
+#include <linux/mman.h>
+#include <sys/mman.h>
 //#include "jni_hook.h"
 #include "jni.h"
 #define LOG_TAG "Native"
@@ -54,3 +62,18 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_6;
 }
 
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_hepta_hideapk_MainActivity_zipLoadApk(JNIEnv *env, jobject thiz, jstring s) {
+    const char* apk_path = env->GetStringUTFChars(s, nullptr);
+    // 打开文件
+    int fd = open(apk_path, O_RDONLY);
+    if (fd == -1) {
+        LOGE("Failed to open file: %s", strerror(errno));
+        env->ReleaseStringUTFChars(s, apk_path);
+    }
+
+
+
+}

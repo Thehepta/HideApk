@@ -13,7 +13,7 @@ project("hideapk")
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
-
+include_directories(./)
 add_subdirectory(hideload)
 
 

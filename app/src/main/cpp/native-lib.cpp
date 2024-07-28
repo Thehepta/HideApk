@@ -3,6 +3,9 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <android/log.h>
+#include <linux/ashmem.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #include "hideload/entry.h"
 #define LOG_TAG "Native"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
@@ -41,10 +44,7 @@ Java_com_hepta_hideapk_MainActivity_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-#include <sys/mman.h>
-#include <linux/ashmem.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
+
 
 
 uint8_t *create_ashmem_fd(int size){

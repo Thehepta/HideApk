@@ -6,7 +6,6 @@
 #include <locale>
 #include <linux/ashmem.h>
 #include "linker.h"
-
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>

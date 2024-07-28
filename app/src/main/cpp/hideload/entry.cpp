@@ -173,7 +173,30 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
     }
 }
 
+int getApkInSo(char * apkSource,char* libname){
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
 
+    mz_bool status = mz_zip_reader_init_file(&zip_archive, apkSource, 0);
+    if (!status) {
+        printf("Could not initialize zip reader.\n");
+        return -1;
+    }
+    int file_count = (int)mz_zip_reader_get_num_files(&zip_archive);
+    for (int i = 0; i < file_count; i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) {
+            printf("Could not retrieve file info.\n");
+            mz_zip_reader_end(&zip_archive);
+            return -1;
+        }
+        if(strstr(file_stat.m_filename,APK_NATIVE_LIB)!= NULL) {
+            if(strstr(file_stat.m_filename,libname)!= NULL) {
+
+            }
+        }
+    }
+}
 
 
 jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource){

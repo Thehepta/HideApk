@@ -5,12 +5,11 @@
 #pragma once
 
 #include <dlfcn.h>
-
+#include "miniz.h"
 #include <inttypes.h>
 #include <link.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "miniz.h"
 #include "linker_phdr.h"
 #include "linker_soinfo.h"
 #include<unordered_map>
@@ -25,6 +24,13 @@
 #define APK_NATIVE_LIB "lib/armeabi-v7a"
 #endif
 
+struct ApkNativeInfo {
+    mz_zip_archive_file_stat file_stat;
+    uint8_t * somem_addr;
+    std::string libname;
+    int fd;
+};
+
 
 soinfo* find_all_library_byname(const char* soname) ;
 soinfo* find_system_library_byname(const char* soname);
@@ -36,12 +42,7 @@ soinfo* find_system_library_byname(const char* soname);
 #define SUPPORTED_DT_FLAGS_1 (DF_1_NOW | DF_1_GLOBAL | DF_1_NODELETE | DF_1_PIE)
 
 
-struct ApkNativeInfo {
-    mz_zip_archive_file_stat file_stat;
-    uint8_t * somem_addr;
-    std::string libname;
-    int fd;
-};
+
 
 
 #define PAGE_START(x) ((x) & PAGE_MASK)

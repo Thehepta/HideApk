@@ -125,7 +125,23 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        Button ExternZlibLoadApk = binding.ExternZlibLoadApk;
+        ExternZlibLoadApk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e("rzx","zipLoadApk");
+                ApplicationInfo applicationInfo = null;
+                try {
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                zipLoadApk(applicationInfo.sourceDir);
+            }
+        });
     }
+    private native ClassLoader zipLoadApk(String s);
 
     private native void customFilehideApkLoad(String s);
     private native void customMemhideApkLoad(String s);
