@@ -159,7 +159,7 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
 
 
         for (auto&& task : load_tasks) {
-            task->soload(load_tasks, env);
+            task->soload();
             call_JNI_OnLoad(task->get_soinfo(),env, g_currentDexLoad);
             task->hack();
             delete task;
@@ -173,7 +173,7 @@ jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
     }
 }
 
-int getApkInSo(char * apkSource,char* libname){
+uint64_t getSoInApkOffset(char * apkSource,char* libname){
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
 
@@ -192,10 +192,12 @@ int getApkInSo(char * apkSource,char* libname){
         }
         if(strstr(file_stat.m_filename,APK_NATIVE_LIB)!= NULL) {
             if(strstr(file_stat.m_filename,libname)!= NULL) {
-
+                return file_stat.m_local_header_ofs;
             }
         }
     }
+    mz_zip_reader_end(&zip_archive);
+    return -1;
 }
 
 
@@ -231,6 +233,42 @@ jobject memhideLoadApkModule(JNIEnv *env, unsigned char *zip_data, size_t zip_si
 
 }
 
+void *load_so_by_fd(int fd){
+    std::unordered_map<const soinfo*, ElfReader> readers_map;
+    struct stat st;
+    if(fstat(fd,&st) == -1){
+        perror("hide_dlopen: open failed ");
+        close(fd);
+        return nullptr;
+    }
+
+    LoadTask* task =  new LoadTask("file_data", nullptr, nullptr, &readers_map);
+    task->set_fd(fd, false);
+    task->set_file_offset(0);
+    task->set_file_size(st.st_size);
+    soinfo* si = new soinfo(nullptr, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
+    task->set_soinfo(si);
+
+    if (!task->read()) {
+        task->set_soinfo(nullptr);
+        return nullptr;
+    }
+    const ElfReader& elf_reader = task->get_elf_reader();
+    for (const ElfW(Dyn)* d = elf_reader.dynamic(); d->d_tag != DT_NULL; ++d) {
+        if (d->d_tag == DT_RUNPATH) {
+            si->set_dt_runpath(elf_reader.get_string(d->d_un.d_val));
+        }
+        if (d->d_tag == DT_SONAME) {
+            si->set_soname(elf_reader.get_string(d->d_un.d_val));
+        }
+    }
+
+    task->hack();
+    soinfo *ret_si = task->get_soinfo();
+    delete task;
+    return ret_si;
+}
+
 void *hide_dlopen(   const char *file_data){
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     int fd = open(file_data,O_RDWR);
@@ -252,7 +290,6 @@ void *hide_dlopen(   const char *file_data){
     task->set_soinfo(si);
 
     if (!task->read()) {
-//            soinfo_free(si);
         task->set_soinfo(nullptr);
         return nullptr;
     }
@@ -265,7 +302,7 @@ void *hide_dlopen(   const char *file_data){
             si->set_soname(elf_reader.get_string(d->d_un.d_val));
         }
     }
-
+    task->soload();
     task->hack();
     soinfo *ret_si = task->get_soinfo();
     delete task;

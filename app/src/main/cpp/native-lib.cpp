@@ -6,11 +6,15 @@
 #include <linux/ashmem.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "hideload/entry.h"
 #define LOG_TAG "Native"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 #define MAX_LINE_LENGTH 256
+#define CHUNK_SIZE 4096  // 每次读取的块大小
+
 struct Module {
     char name[MAX_LINE_LENGTH];
     intptr_t start_address;
@@ -217,4 +221,52 @@ JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_customhideSoLoad(JNIEnv *env, jobject thiz,
                                                      jstring libname_path) {
     // TODO: implement customhideSoLoad()
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_SystenStubLoadSo(JNIEnv *env, jobject thiz) {
+
+    const char *libc_name = "/apex/com.android.runtime/lib64/bionic/libdl.so";  // libc 的路径，可能因系统而异
+    int libc_fd = open(libc_name, O_RDONLY);
+    if (libc_fd < 0) {
+        perror("open");
+        return ;
+    }
+
+    // 获取文件信息
+    struct stat file_stat;
+    if (fstat(libc_fd, &file_stat) == -1) {
+        perror("fstat");
+        close(libc_fd);
+        return ;
+    }
+    size_t libc_file_size = file_stat.st_size;
+
+    const char *libdl_name = "/apex/com.android.runtime/lib64/bionic/libc.so";  // libc 的路径，可能因系统而异
+    int libdl_fd = open(libdl_name, O_RDONLY);
+    if (libdl_fd < 0) {
+        perror("open");
+        return ;
+    }
+
+    // 映射文件到内存
+    uint8_t *map = static_cast<uint8_t *>(mmap(NULL, libc_file_size, PROT_READ | PROT_WRITE,
+                                               MAP_PRIVATE, libdl_fd, 0));
+    if (map == MAP_FAILED) {
+        perror("mmap");
+        return ;
+    }
+    ssize_t bytes_read;
+    ssize_t file_offset = 0;
+    while ((bytes_read = read(libc_fd, map + file_offset, CHUNK_SIZE)) > 0) {
+        LOGE("copy = %zd",bytes_read);
+        file_offset += bytes_read;
+    }
+    LOGE("read size = %zd",file_offset);
+    LOGE("libc_file_size  = %zu",libc_file_size);
+    void *ret_si = load_so_by_fd(libdl_fd);
+    void *dlsym_addr =  hide_dlsym(ret_si,"dlsym");
+    LOGE("libc_file_size  = %p",dlsym_addr);
+
+    return;
 }

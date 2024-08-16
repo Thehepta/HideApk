@@ -140,8 +140,18 @@ public class MainActivity extends AppCompatActivity {
                 zipLoadApk(applicationInfo.sourceDir);
             }
         });
+
+        Button SystenStubLoadSo = binding.SystenStubLoadSo;
+        SystenStubLoadSo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SystenStubLoadSo();
+            }
+        });
+
     }
     private native ClassLoader zipLoadApk(String s);
+    private native void SystenStubLoadSo();
 
     private native void customFilehideApkLoad(String s);
     private native void customMemhideApkLoad(String s);

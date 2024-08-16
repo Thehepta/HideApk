@@ -135,7 +135,7 @@ soinfo* find_containing_library(const void* p) {
 
 
 //只支持单so，删除互相依赖处理
-soinfo* find_library(std::vector<LoadTask*> &load_tasks,const char *soname) {
+soinfo* find_library(const char *soname) {
 
 //    LoadTask* find_soinfo = nullptr;
 //    for (auto&& task : load_tasks) {
@@ -175,7 +175,7 @@ const char* fix_dt_needed(const char* dt_needed, const char* sopath __unused) {
 }
 
 
-void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
+void LoadTask::soload( ) {
 
     SymbolLookupList lookup_list;
 
@@ -183,7 +183,7 @@ void LoadTask::soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv) {
         if (d->d_tag == DT_NEEDED) {
             const char* name = fix_dt_needed(get_elf_reader().get_string(d->d_un.d_val), get_elf_reader().name());
             LOGE("NEED name: %s",name);
-            soinfo* system_si = find_library(load_tasks, name);
+            soinfo* system_si = find_library(name);
             soinfo *custom_si  = new soinfo();
             custom_si->set_soname(name);
             custom_si->transform(system_si);

@@ -181,7 +181,7 @@ public:
         return needed_by_;
     }
 
-    void soload(std::vector<LoadTask *> &load_tasks, JNIEnv *pEnv);
+    void soload();
 
     void hack();
 
@@ -198,6 +198,7 @@ private:
     std::unordered_map<const soinfo*, ElfReader>* elf_readers_map_;
     // TODO(dimitry): needed by workaround for http://b/26394120 (the grey-list)
     bool is_dt_needed_;
+
     // END OF WORKAROUND
     const android_namespace_t* const start_from_;
 
