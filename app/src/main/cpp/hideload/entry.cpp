@@ -237,7 +237,7 @@ void *load_so_by_fd(int fd){
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     struct stat st;
     if(fstat(fd,&st) == -1){
-        perror("hide_dlopen: open failed ");
+        perror("custom_dlopen: open failed ");
         close(fd);
         return nullptr;
     }
@@ -262,19 +262,19 @@ void *load_so_by_fd(int fd){
             si->set_soname(elf_reader.get_string(d->d_un.d_val));
         }
     }
-
+    task->soload();
     task->hack();
     soinfo *ret_si = task->get_soinfo();
     delete task;
     return ret_si;
 }
 
-void *hide_dlopen(   const char *file_data){
+void *custom_dlopen(const char *file_data){
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     int fd = open(file_data,O_RDWR);
     struct stat st;
     if(fstat(fd,&st) == -1){
-        perror("hide_dlopen: open failed ");
+        perror("custom_dlopen: open failed ");
         close(fd);
         return nullptr;
     }
@@ -284,9 +284,6 @@ void *hide_dlopen(   const char *file_data){
     task->set_file_offset(0);
     task->set_file_size(st.st_size);
     soinfo* si = new soinfo(nullptr, ""/*real path*/, nullptr, 0, RTLD_GLOBAL);
-    if (si == nullptr) {
-        return nullptr;
-    }
     task->set_soinfo(si);
 
     if (!task->read()) {
@@ -305,11 +302,12 @@ void *hide_dlopen(   const char *file_data){
     task->soload();
     task->hack();
     soinfo *ret_si = task->get_soinfo();
+    close(fd);
     delete task;
     return ret_si;
 }
 
-void *hide_dlsym(void *si,char* syn_name) {
+void *custom_dlsym(void *si,char* syn_name) {
     SymbolName symbol_name(syn_name);
 
 

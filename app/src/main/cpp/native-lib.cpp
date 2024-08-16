@@ -270,3 +270,19 @@ Java_com_hepta_hideapk_MainActivity_SystenStubLoadSo(JNIEnv *env, jobject thiz) 
 
     return;
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_customLinkerLoadPathSO(JNIEnv *env, jobject thiz) {
+    // TODO: implement customLinkerLoadPathSO()
+    const char *libdl_name = "/apex/com.android.runtime/lib64/bionic/libdl.so";  // libc 的路径，可能因系统而异
+    int libdl_fd = open(libdl_name, O_RDONLY);
+    if (libdl_fd < 0) {
+        perror("open");
+        return ;
+    }
+    void *ret_si = load_so_by_fd(libdl_fd);
+    void *dlsym_addr =  hide_dlsym(ret_si,"dlsym");
+    close(libdl_fd);
+    LOGE("libc_file_size  = %p",dlsym_addr);
+}

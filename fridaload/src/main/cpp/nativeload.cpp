@@ -74,11 +74,6 @@ Java_com_hepta_hideapk_MainActivity_zipLoadApk(JNIEnv *env, jobject thiz, jstrin
         env->ReleaseStringUTFChars(s, apk_path);
     }
 
-
-
-
-
-
     return nullptr;
 
 }

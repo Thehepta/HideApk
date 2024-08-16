@@ -48,10 +48,20 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-            android:id="@+id/Extern_Hide_Load_so"
+            android:id="@+id/rxposed_module_load"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="RXPOSED hide APK load!"
+            android:text="RXPOSED  APK load!"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/custom_linker_loadso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="custom_linker_load_so"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
