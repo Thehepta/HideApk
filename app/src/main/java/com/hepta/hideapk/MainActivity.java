@@ -12,9 +12,12 @@ import android.widget.Button;
 
 import com.hepta.hideapk.databinding.ActivityMainBinding;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 
+import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-
                             ApplicationInfo applicationInfo =  getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
                             PathClassLoader pathClassLoader = new PathClassLoader(applicationInfo.sourceDir,null);
                             Class<?> LoadEntry = pathClassLoader.loadClass("com.hepta.fridaload.LoadEntry");
@@ -158,6 +160,47 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Button classloadDexmerge = binding.classloadDexmerge;
+        classloadDexmerge.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e("rzx","hideLoadApkBtn");
+                ApplicationInfo applicationInfo = null;
+                try {
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                ClassLoader classLoader = getClassLoader();
+                classloadDexmerge(applicationInfo.sourceDir,getClassLoader());
+                Class<?> LoadEntry = null;
+                try {
+                    LoadEntry = classLoader.loadClass("com.hepta.fridaload.LoadEntry");
+                    Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
+//                    method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
+                    Log.e("Rzx",method.getClass().getName());
+                } catch (ClassNotFoundException |
+                         NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+
+
+//                Class<?> dexFileClass = null;
+//                try {
+//                    dexFileClass =  Class.forName("dalvik.system.DexPathList$Element");
+//                    Constructor<?>[] openInMemoryDexFileMethod = dexFileClass.getDeclaredConstructors();
+//                    for(Constructor<?> method: openInMemoryDexFileMethod){
+//                            Log.e("rzx","method:"+method.getName());
+//                    }
+//                } catch (ClassNotFoundException e) {
+//                    throw new RuntimeException(e);
+//                }
+//
+//                // 2. 获取 openInMemoryDexFile 方法的引用
+
+            }
+        });
+
     }
     private native ClassLoader zipLoadApk(String s);
     private native void SystenStubLoadSo();
@@ -167,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
     private native void customMemhideApkLoad(String s);
     private native ClassLoader GethideApkLoad(String s);
     private native void customhideSoLoad(String libnamePath);
+    private native void classloadDexmerge(String s,ClassLoader classLoader);
 
     /**
      * A native method that is implemented by the 'hideapk' native library,

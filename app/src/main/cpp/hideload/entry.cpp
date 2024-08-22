@@ -9,7 +9,9 @@
 #include "linker.h"
 #include "linker_debug.h"
 
-
+#include <android/log.h>
+#define LOG_TAG "entry"
+#define ENTRYLOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 int memfd_create(const char* name, unsigned int flags) {
     // Check kernel version supports memfd_create(). Some older kernels segfault executing
@@ -48,6 +50,172 @@ uint8_t * Creatememfd(int *fd, int size){
     }
     return ptr;
 }
+
+int Load_dexfile_Merge_classLoader(JNIEnv *env, mz_zip_archive zip_archive, jobject classLoader) {
+
+    jclass dexFileClass = env->FindClass("dalvik/system/DexFile");
+    if (dexFileClass == nullptr) {
+        ENTRYLOGE("Failed to find DexFile class");
+        return -1;
+    }
+
+    jclass methodClass = env->FindClass("java/lang/reflect/Method");
+    jmethodID setAccessibleMethod = env->GetMethodID(methodClass, "setAccessible", "(Z)V");
+    if (setAccessibleMethod == nullptr) {
+        ENTRYLOGE("Failed to find setAccessible method");
+        return -1;
+    }
+
+    jclass elementClass = env->FindClass("dalvik/system/DexPathList$Element");
+    if (elementClass == nullptr) {
+        ENTRYLOGE("Failed to find DexPathList$Element class");
+        return -1;
+    }
+
+    jmethodID elementConstructor = env->GetMethodID(elementClass, "<init>", "(Ldalvik/system/DexFile;)V");
+    if (elementConstructor == nullptr) {
+        ENTRYLOGE("Failed to find DexPathList$Element constructor");
+        return -1;
+    }
+
+    // 获取 DexFile 构造函数
+    jmethodID dexFileConstructor = env->GetMethodID(dexFileClass, "<init>",
+                                                    "([Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;[Ldalvik/system/DexPathList$Element;)V");
+    if (dexFileConstructor == nullptr) {
+        ENTRYLOGE("Failed to find DexFile constructor");
+        return -1;
+    }
+
+    // 4. 调用 setAccessible(true) 使私有方法可访问
+    jobject methodObject = env->ToReflectedMethod(dexFileClass, dexFileConstructor, JNI_TRUE);
+    env->CallVoidMethod(methodObject, setAccessibleMethod, JNI_TRUE);
+
+
+    auto byte_buffer_class = env->FindClass("java/nio/ByteBuffer");
+    std::unordered_map<const soinfo*, ElfReader> readers_map;
+//    std::vector<LoadTask*> load_tasks;
+    std::vector<jobject> load_dexs;
+
+    std::vector<ApkNativeInfo> vec_apkNativeInfo;
+    int file_count = (int)mz_zip_reader_get_num_files(&zip_archive);
+    for (int i = 0; i < file_count; i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) {
+            printf("Could not retrieve file info.\n");
+            mz_zip_reader_end(&zip_archive);
+            return -1;
+        }
+//        if(strstr(file_stat.m_filename,APK_NATIVE_LIB)!= NULL) {
+//            int fd;
+//            uint8_t * somem_addr = Creatememfd(&fd, file_stat.m_uncomp_size);
+//
+//            if (!somem_addr) {
+//                printf("Failed to allocate memory.\n");
+//                mz_zip_reader_end(&zip_archive);
+//                return -1;
+//            }
+//            if (!mz_zip_reader_extract_to_mem(&zip_archive, i, somem_addr, file_stat.m_uncomp_size, 0)) {
+//                printf("Failed to extract file.\n");
+//                mz_zip_reader_end(&zip_archive);
+//                return -1;
+//            }
+//
+//            LoadTask* task =  new LoadTask(file_stat.m_filename, nullptr, nullptr, &readers_map);
+//            task->set_fd(fd, false);
+//            task->set_file_offset(0);
+//            task->set_file_size(file_stat.m_uncomp_size);
+//            load_tasks.push_back(task);
+////            printf("Filename: \"%s\", Comment: \"%s\", Uncompressed size: %llu\n",file_stat.m_filename, file_stat.m_comment ? file_stat.m_comment : "",(mz_uint64) file_stat.m_uncomp_size);
+//        }
+        if(strstr(file_stat.m_filename, ".dex") != NULL){
+            uint8_t *file_data = (unsigned char *)malloc(file_stat.m_uncomp_size);
+            if (!file_data) {
+                printf("Memory allocation failed\n");
+                mz_zip_reader_end(&zip_archive);
+                return -1;
+            }
+            if (!mz_zip_reader_extract_to_mem(&zip_archive, i, file_data, file_stat.m_uncomp_size, 0)) {
+                printf("Failed to extract file\n");
+                free(file_data);
+                mz_zip_reader_end(&zip_archive);
+                return -1;
+            }
+            auto dex_buffer = env->NewDirectByteBuffer(file_data, file_stat.m_uncomp_size);
+            load_dexs.push_back(dex_buffer);
+        }
+    }
+    mz_zip_reader_end(&zip_archive);
+
+    jobjectArray byteBuffers = env->NewObjectArray(load_dexs.size(), byte_buffer_class, NULL);
+
+    for (size_t i = 0; i<load_dexs.size(); ++i) {
+        jobject dex_buffer = load_dexs[i];
+        env->SetObjectArrayElement(byteBuffers, i, dex_buffer);
+    }
+
+    // 创建 DexFile 实例，第二和第三个参数为 null
+    jobject dexFileInstance = env->NewObject(dexFileClass, dexFileConstructor, byteBuffers, nullptr, nullptr);
+    if (dexFileInstance == nullptr) {
+        ENTRYLOGE("Failed to create DexFile instance");
+    }else{
+        jobject pluginDexElement = env->NewObject(elementClass, elementConstructor, dexFileInstance);
+        if (pluginDexElement == nullptr) {
+            ENTRYLOGE("Failed to create DexPathList$Element instance");
+        } else{
+            ENTRYLOGE("merge dex");
+            try {
+                // 1. 获取 BaseDexClassLoader 和 DexPathList 类
+                jclass baseDexClassLoaderClass = env->FindClass("dalvik/system/BaseDexClassLoader");
+                jclass dexPathListClass = env->FindClass("dalvik/system/DexPathList");
+
+                if (baseDexClassLoaderClass == nullptr || dexPathListClass == nullptr) {
+                    ENTRYLOGE("Failed to find classes");
+                    return -1;
+                }
+
+                // 2. 获取 pathList 和 dexElements 字段的引用
+                jfieldID pathListFieldID = env->GetFieldID(baseDexClassLoaderClass, "pathList", "Ldalvik/system/DexPathList;");
+                jfieldID dexElementsFieldID = env->GetFieldID(dexPathListClass, "dexElements", "[Ldalvik/system/DexPathList$Element;");
+
+                if (pathListFieldID == nullptr || dexElementsFieldID == nullptr) {
+                    ENTRYLOGE("Failed to find fields");
+                    return -1;
+                }
+
+                // 3. 获取主机的 PathClassLoader 并获取其 pathList 和 dexElements
+                jobject hostPathList = env->GetObjectField(classLoader, pathListFieldID);
+                jobjectArray hostDexElements = (jobjectArray) env->GetObjectField(hostPathList, dexElementsFieldID);
+
+                // 4. 创建 DexClassLoader 并获取其 pathList 和 dexElements
+                jclass dexClassLoaderClass = env->FindClass("dalvik/system/DexClassLoader");
+                jmethodID dexClassLoaderConstructor = env->GetMethodID(dexClassLoaderClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V");
+
+
+
+                // 5. 合并主机和插件的 dexElements
+                jsize hostLength = env->GetArrayLength(hostDexElements);
+
+                jclass elementClass = env->FindClass("dalvik/system/DexPathList$Element");
+                jobjectArray newDexElements = env->NewObjectArray(hostLength + 1, elementClass, nullptr);
+
+                for (jsize i = 0; i < hostLength; i++) {
+                    jobject item = env->GetObjectArrayElement(hostDexElements, i);
+                    env->SetObjectArrayElement(newDexElements, i, item);
+                }
+
+                env->SetObjectArrayElement(newDexElements, hostLength, pluginDexElement);
+                // 6. 将合并后的 dexElements 设置回主机的 pathList 中
+                env->SetObjectField(hostPathList, dexElementsFieldID, newDexElements);
+
+            } catch (...) {
+                ENTRYLOGE("Exception occurred in JNI code");
+            }
+
+        }
+    }
+    return 0;
+}
+
 
 
 jobject hideLoadApkModule(JNIEnv *env, mz_zip_archive& zip_archive){
@@ -232,6 +400,24 @@ jobject memhideLoadApkModule(JNIEnv *env, unsigned char *zip_data, size_t zip_si
     return resutl_classloader;
 
 }
+
+void Class_DexFile_Merge(JNIEnv *env,  char *apkSource, jobject classloader){
+
+
+    // 使用 miniz 库解压缩内存中的 zip 文件
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
+
+    mz_bool status = mz_zip_reader_init_file(&zip_archive, apkSource, 0);
+    if (!status) {
+        printf("Could not initialize zip reader.\n");
+        return ;
+    }
+    Load_dexfile_Merge_classLoader(env,zip_archive,classloader);
+
+}
+
+
 
 void *load_so_by_fd(int fd){
     std::unordered_map<const soinfo*, ElfReader> readers_map;

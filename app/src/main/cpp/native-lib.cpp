@@ -265,7 +265,7 @@ Java_com_hepta_hideapk_MainActivity_SystenStubLoadSo(JNIEnv *env, jobject thiz) 
     LOGE("read size = %zd",file_offset);
     LOGE("libc_file_size  = %zu",libc_file_size);
     void *ret_si = load_so_by_fd(libdl_fd);
-    void *dlsym_addr =  hide_dlsym(ret_si,"dlsym");
+    void *dlsym_addr = custom_dlsym(ret_si, "dlsym");
     LOGE("libc_file_size  = %p",dlsym_addr);
 
     return;
@@ -282,7 +282,14 @@ Java_com_hepta_hideapk_MainActivity_customLinkerLoadPathSO(JNIEnv *env, jobject 
         return ;
     }
     void *ret_si = load_so_by_fd(libdl_fd);
-    void *dlsym_addr =  hide_dlsym(ret_si,"dlsym");
+    void *dlsym_addr = custom_dlsym(ret_si, "dlsym");
     close(libdl_fd);
     LOGE("libc_file_size  = %p",dlsym_addr);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_classloadDexmerge(JNIEnv *env, jobject thiz, jstring source,
+                                                      jobject class_loader) {
+    char* pkgName = const_cast<char *>(env->GetStringUTFChars(source, nullptr));
+    Class_DexFile_Merge(env,pkgName,class_loader);
 }
