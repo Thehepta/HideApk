@@ -25,7 +25,7 @@ public class LoadEntry {
         if(!android.os.Process.is64Bit()){
             abi = "armeabi-v7a";
         }
-        String str = source+"!/lib/"+abi+"/libfrida-gadget.so";
+        String str = source+"!/lib/"+abi+"/libnativetext.so";
         System.load(str);
     }
 

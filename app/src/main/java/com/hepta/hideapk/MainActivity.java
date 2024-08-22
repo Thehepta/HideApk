@@ -176,11 +176,10 @@ public class MainActivity extends AppCompatActivity {
                 Class<?> LoadEntry = null;
                 try {
                     LoadEntry = classLoader.loadClass("com.hepta.fridaload.LoadEntry");
-                    Method method = LoadEntry.getMethod("Entry", Context.class, String.class);
-//                    method.invoke(null,getApplicationContext(),applicationInfo.sourceDir);
-                    Log.e("Rzx",method.getClass().getName());
-                } catch (ClassNotFoundException |
-                         NoSuchMethodException e) {
+                    Method method = LoadEntry.getMethod("text_java");
+                    method.invoke(null);
+                } catch (ClassNotFoundException | InvocationTargetException |
+                         NoSuchMethodException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
 
