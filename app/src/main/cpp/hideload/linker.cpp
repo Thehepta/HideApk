@@ -15,7 +15,7 @@
 #include <sys/syscall.h>
 #include <sys/utsname.h>
 #include "jni_hook.h"
-#include "ZipArchiveCache.h"
+#include "ziparchive/zip_archive.h"
 #include "linker_utils.h"
 
 
@@ -260,8 +260,7 @@ static bool realpath_fd(int fd, std::string* realpath) {
 }
 
 
-static int open_library_in_zipfile(ZipArchiveCache* zip_archive_cache,
-                                   const char* const input_path,
+static int open_library_in_zipfile(const char* const input_path,
                                    off64_t* file_offset, std::string* realpath) {
     std::string normalized_path;
     if (!normalize_path(input_path, &normalized_path)) {
@@ -290,17 +289,21 @@ static int open_library_in_zipfile(ZipArchiveCache* zip_archive_cache,
 
     const char* zip_path = buf;
     const char* file_path = &buf[separator - path + 2];
-    int fd = TEMP_FAILURE_RETRY(open(zip_path, O_RDONLY | O_CLOEXEC));
-    if (fd == -1) {
-        return -1;
-    }
 
     ZipArchiveHandle handle;
-    if (!zip_archive_cache->get_or_open(zip_path, &handle)) {
-        // invalid zip-file (?)
-        close(fd);
-        return -1;
+
+    int fd = TEMP_FAILURE_RETRY(open(zip_path, O_RDONLY | O_CLOEXEC));
+    if (fd == -1) {
+        return false;
     }
+
+    if (OpenArchiveFd(fd, "", &handle) != 0) {
+        // invalid zip-file (?)
+        CloseArchive(handle);
+        return false;
+    }
+
+
 
     ZipEntry entry;
 
@@ -330,51 +333,3 @@ static int open_library_in_zipfile(ZipArchiveCache* zip_archive_cache,
 
     return fd;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
