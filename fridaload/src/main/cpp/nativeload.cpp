@@ -10,6 +10,7 @@
 //#include "jni_hook.h"
 #include "jni.h"
 #define LOG_TAG "Native"
+
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 
@@ -75,5 +76,4 @@ Java_com_hepta_hideapk_MainActivity_zipLoadApk(JNIEnv *env, jobject thiz, jstrin
     }
 
     return nullptr;
-
 }

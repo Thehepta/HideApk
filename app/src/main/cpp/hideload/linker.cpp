@@ -15,6 +15,8 @@
 #include <sys/syscall.h>
 #include <sys/utsname.h>
 #include "jni_hook.h"
+#include "ZipArchiveCache.h"
+#include "linker_utils.h"
 
 
 soinfo* (*solist_get_head)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
@@ -236,17 +238,97 @@ void LoadTask::hack() {
 }
 
 
+static bool realpath_fd(int fd, std::string* realpath) {
+    // proc_self_fd needs to be large enough to hold "/proc/self/fd/" plus an
+    // integer, plus the NULL terminator.
+    char proc_self_fd[32];
+    // We want to statically allocate this large buffer so that we don't grow
+    // the stack by too much.
+    static char buf[PATH_MAX];
 
+//    async_safe_format_buffer(proc_self_fd, sizeof(proc_self_fd), "/proc/self/fd/%d", fd);
+//    auto length = readlink(proc_self_fd, buf, sizeof(buf));
+//    if (length == -1) {
+//        if (!is_first_stage_init()) {
+//            PRINT("readlink(\"%s\") failed: %s [fd=%d]", proc_self_fd, strerror(errno), fd);
+//        }
+//        return false;
+//    }
 
-
-
-
-uintptr_t ToPathLoadSoGetSymbolAddr(char * sopath,char *topath,char*call_arg){
-
+//    realpath->assign(buf, length);
+    return true;
 }
 
-uintptr_t ToMemLoadSoGetSymbolAddr(char * sopath,char*call_arg){
 
+static int open_library_in_zipfile(ZipArchiveCache* zip_archive_cache,
+                                   const char* const input_path,
+                                   off64_t* file_offset, std::string* realpath) {
+    std::string normalized_path;
+    if (!normalize_path(input_path, &normalized_path)) {
+        return -1;
+    }
+
+    const char* const path = normalized_path.c_str();
+    TRACE("Trying zip file open from path \"%s\" -> normalized \"%s\"", input_path, path);
+
+    // Treat an '!/' separator inside a path as the separator between the name
+    // of the zip file on disk and the subdirectory to search within it.
+    // For example, if path is "foo.zip!/bar/bas/x.so", then we search for
+    // "bar/bas/x.so" within "foo.zip".
+    const char* const separator = strstr(path, kZipFileSeparator);
+    if (separator == nullptr) {
+        return -1;
+    }
+
+    char buf[512];
+    if (strlcpy(buf, path, sizeof(buf)) >= sizeof(buf)) {
+        PRINT("Warning: ignoring very long library path: %s", path);
+        return -1;
+    }
+
+    buf[separator - path] = '\0';
+
+    const char* zip_path = buf;
+    const char* file_path = &buf[separator - path + 2];
+    int fd = TEMP_FAILURE_RETRY(open(zip_path, O_RDONLY | O_CLOEXEC));
+    if (fd == -1) {
+        return -1;
+    }
+
+    ZipArchiveHandle handle;
+    if (!zip_archive_cache->get_or_open(zip_path, &handle)) {
+        // invalid zip-file (?)
+        close(fd);
+        return -1;
+    }
+
+    ZipEntry entry;
+
+    if (FindEntry(handle, file_path, &entry) != 0) {
+        // Entry was not found.
+        close(fd);
+        return -1;
+    }
+
+    // Check if it is properly stored
+    if (entry.method != kCompressStored || (entry.offset % PAGE_SIZE) != 0) {
+        close(fd);
+        return -1;
+    }
+
+    *file_offset = entry.offset;
+
+    if (realpath_fd(fd, realpath)) {
+        *realpath += separator;
+    } else {
+        if (!is_first_stage_init()) {
+            PRINT("warning: unable to get realpath for the library \"%s\". Will use given path.",
+                  normalized_path.c_str());
+        }
+        *realpath = normalized_path;
+    }
+
+    return fd;
 }
 
 
