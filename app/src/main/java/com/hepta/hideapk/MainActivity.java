@@ -171,8 +171,8 @@ public class MainActivity extends AppCompatActivity {
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                ClassLoader classLoader = getClassLoader();
-                classloadDexmerge(applicationInfo.sourceDir,getClassLoader());
+                ClassLoader classLoader = getHideClassLoader();
+                classloadDexmerge(applicationInfo.sourceDir,classLoader);
                 Class<?> LoadEntry = null;
                 try {
                     LoadEntry = classLoader.loadClass("com.hepta.fridaload.LoadEntry");
@@ -201,6 +201,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    private ClassLoader getHideClassLoader() {
+        return new PathClassLoader(".",ClassLoader.getSystemClassLoader());
+
+    }
+
     private native ClassLoader zipLoadApk(String s);
     private native void SystenStubLoadSo();
     private native void customLinkerLoadPathSO();
