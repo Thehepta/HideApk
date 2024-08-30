@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                 } catch (PackageManager.NameNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                ClassLoader classLoader = getHideClassLoader();
+                ClassLoader classLoader = new PathClassLoader(".",ClassLoader.getSystemClassLoader());
                 classloadDexmerge(applicationInfo.sourceDir,classLoader);
                 Class<?> LoadEntry = null;
                 try {
@@ -183,29 +183,36 @@ public class MainActivity extends AppCompatActivity {
                     throw new RuntimeException(e);
                 }
 
-
-//                Class<?> dexFileClass = null;
-//                try {
-//                    dexFileClass =  Class.forName("dalvik.system.DexPathList$Element");
-//                    Constructor<?>[] openInMemoryDexFileMethod = dexFileClass.getDeclaredConstructors();
-//                    for(Constructor<?> method: openInMemoryDexFileMethod){
-//                            Log.e("rzx","method:"+method.getName());
-//                    }
-//                } catch (ClassNotFoundException e) {
-//                    throw new RuntimeException(e);
-//                }
-//
-//                // 2. 获取 openInMemoryDexFile 方法的引用
-
             }
         });
 
-    }
+        Button javaDexmerge = binding.javaDexmerge;
+        javaDexmerge.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ApplicationInfo applicationInfo = null;
+                try {
+                    applicationInfo = getApplication().getPackageManager().getApplicationInfo("com.hepta.fridaload", 0);
+                } catch (PackageManager.NameNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
 
-    private ClassLoader getHideClassLoader() {
-        return new PathClassLoader(".",ClassLoader.getSystemClassLoader());
+                ClassLoader classLoader = Utils.mergeDex(getClassLoader(),applicationInfo);
+                Class<?> LoadEntry = null;
+                try {
+                    LoadEntry = classLoader.loadClass("com.hepta.fridaload.LoadEntry");
+                    Method method = LoadEntry.getMethod("text_java");
+                    method.invoke(null);
+                } catch (ClassNotFoundException | InvocationTargetException |
+                         NoSuchMethodException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
 
-    }
+
+        }
+
 
     private native ClassLoader zipLoadApk(String s);
     private native void SystenStubLoadSo();
