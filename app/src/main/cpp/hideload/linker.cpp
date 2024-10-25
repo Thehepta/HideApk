@@ -97,7 +97,6 @@ soinfo* find_system_library_byname(const char* soname) {
                 return si;
             }
         }
-
     }
     return nullptr;
 }

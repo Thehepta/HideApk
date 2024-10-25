@@ -209,9 +209,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        Button pltHook = binding.pltHook;
+        pltHook.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                plt_hook();
+            }
+        });
 
-
-        }
+    }
 
 
     private native ClassLoader zipLoadApk(String s);
@@ -224,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
     private native void customhideSoLoad(String libnamePath);
     private native void classloadDexmerge(String s,ClassLoader classLoader);
 
+    private native void plt_hook();
     /**
      * A native method that is implemented by the 'hideapk' native library,
      * which is packaged with this application.

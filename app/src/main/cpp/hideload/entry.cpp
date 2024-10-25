@@ -457,6 +457,7 @@ void *load_so_by_fd(int fd){
 }
 
 void *custom_dlopen(const char *file_data){
+
     std::unordered_map<const soinfo*, ElfReader> readers_map;
     int fd = open(file_data,O_RDWR);
     struct stat st;
@@ -504,4 +505,22 @@ void *custom_dlsym(void *si,char* syn_name) {
     }
     void *sym_func_addr = reinterpret_cast<void *>(sym->st_value + ((soinfo*)si)->load_bias);
     return sym_func_addr;
+}
+
+void  PLT_HOOK(){
+    soinfo* si = find_system_library_byname("libc.so");
+    soinfo *custom_si  = new soinfo();
+    custom_si->set_soname("libc.so");
+    custom_si->transform(si);
+    for(int i =0;i<custom_si->plt_rela_count_;i++){
+        custom_si->plt_rela_[i];
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_plt_1hook(JNIEnv *env, jobject thiz) {
+
+
+
 }
