@@ -512,9 +512,9 @@ void  PLT_HOOK(){
     soinfo *custom_si  = new soinfo();
     custom_si->set_soname("libc.so");
     custom_si->transform(si);
-    for(int i =0;i<custom_si->plt_rela_count_;i++){
-        custom_si->plt_rela_[i];
-    }
+//    for(int i =0;i<custom_si->plt_rela_count_;i++){
+//        custom_si->plt_rela_[i];
+//    }
 }
 
 extern "C"
