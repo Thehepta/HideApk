@@ -2,7 +2,7 @@
 // Created by thehepta on 2024/1/16.
 //
 
-#include "jni_hook.h"
+#include "jni_proxy.h"
 
 #include <android/log.h>
 #define LOG_TAG "JNI_HOOK"

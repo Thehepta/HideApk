@@ -375,7 +375,8 @@ bool process_relocation_impl(Relocator& relocator, const rel_t& reloc) {
             // document (IHI0044F) specifies that R_ARM_GLOB_DAT has an addend, but Bionic isn't adding
             // it.
             count_relocation_if<IsGeneral>(kRelocAbsolute);
-            const ElfW(Addr) result = sym_addr + get_addend_norel();
+            const ElfW(Addr) result =
+                    sym_addr + get_addend_norel();
 //            LOGE("RELO GLOB_DAT %16p <- %16p %s",rel_target, reinterpret_cast<void*>(result), sym_name);
             *static_cast<ElfW(Addr)*>(rel_target) = result;
             return true;
@@ -620,5 +621,30 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
     return true;
 }
 
+void* soinfo::getPltFunAddrByName(char*fun_name) const {
 
+
+#if defined(USE_RELA)
+    for(int i =0;i< this->plt_rela_count_;i++) {
+        rel_t&  reloc = this->plt_rela_[i];
+        const uint32_t r_type = ELFW(R_TYPE)(reloc.r_info);
+        const uint32_t r_sym = ELFW(R_SYM)(reloc.r_info);
+        const char* sym_name = nullptr;
+        if (r_sym != 0) {
+            sym_name = this->strtab_+  this->symtab_[r_sym].st_name;
+            LOGE("plt name :%s st_value: %x",sym_name,this->symtab_[r_sym].st_value);
+            if(strncmp(fun_name,sym_name, strlen(fun_name))==0){
+                void*  rel_target = reinterpret_cast<void *>(reloc.r_offset + this->load_bias);
+                return rel_target;
+            }
+        }
+    }
+#else
+    //这个并未实现 目前只在android上使用
+    for(int i =0;i< this->plt_rela_count_;i++){
+
+    }
+#endif
+    return nullptr;
+}
 

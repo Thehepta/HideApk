@@ -506,21 +506,31 @@ void *custom_dlsym(void *si,char* syn_name) {
     void *sym_func_addr = reinterpret_cast<void *>(sym->st_value + ((soinfo*)si)->load_bias);
     return sym_func_addr;
 }
+void* (*malloc_old) (size_t __byte_count);
+void* malloc_new(size_t __byte_count){
+    LOGE("plt malloc hook call");
+    return malloc_old(__byte_count);
+}
+
 
 void  PLT_HOOK(){
-    soinfo* si = find_system_library_byname("libc.so");
+    soinfo* si = find_system_library_byname("libhideapk.so");
     soinfo *custom_si  = new soinfo();
-    custom_si->set_soname("libc.so");
+    custom_si->set_soname("libhideapk.so");
     custom_si->transform(si);
-//    for(int i =0;i<custom_si->plt_rela_count_;i++){
-//        custom_si->plt_rela_[i];
-//    }
+    uintptr_t *addr = static_cast<uintptr_t *>(custom_si->getPltFunAddrByName("malloc"));
+//    mprotect((void*)*addr,20,PROT_READ|PROT_WRITE);
+//    LOGE("plt name  0x%lx",addr);
+//    LOGE("plt name  0x%lx",&malloc);
+//    *addr = reinterpret_cast<uintptr_t >(malloc_new);
+//    void * text = malloc(1);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_plt_1hook(JNIEnv *env, jobject thiz) {
 
+    PLT_HOOK();
 
 
 }

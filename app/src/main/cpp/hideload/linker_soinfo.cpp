@@ -1075,6 +1075,8 @@ void soinfo::transform(soinfo * si) {
 
 }
 
+
+
 ElfW(Addr) soinfo::resolve_symbol_address(const ElfW(Sym)* s) const  {
     if (ELF_ST_TYPE(s->st_info) == STT_GNU_IFUNC) {
         return call_ifunc_resolver(s->st_value + load_bias);
@@ -1082,6 +1084,8 @@ ElfW(Addr) soinfo::resolve_symbol_address(const ElfW(Sym)* s) const  {
 
     return static_cast<ElfW(Addr)>(s->st_value + load_bias);
 }
+
+
 
 
 uint32_t calculate_elf_hash(const char* name) {

@@ -14,7 +14,7 @@
 #include "linker_debug.h"
 #include <sys/syscall.h>
 #include <sys/utsname.h>
-#include "jni_hook.h"
+#include "jni_proxy.h"
 #include "ziparchive/zip_archive.h"
 #include "linker_utils.h"
 
