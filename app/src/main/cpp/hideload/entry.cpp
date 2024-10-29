@@ -515,27 +515,27 @@ void* malloc_new(size_t __byte_count){
 
 void  PLT_HOOK(){
     soinfo* si = find_system_library_byname("libhideapk.so");
-    soinfo *custom_si  = new soinfo();
-    custom_si->set_soname("libhideapk.so");
-    custom_si->transform(si);
-    uintptr_t *addr = static_cast<uintptr_t *>(custom_si->getPltFunAddrByName("malloc"));
-    size_t page_size = sysconf(_SC_PAGE_SIZE);
-    void *aligned_address = (void *)((uintptr_t)addr & ~(page_size - 1));
-
-    int re = mprotect((void*)aligned_address,page_size,PROT_READ|PROT_WRITE);
-    if(re == -1){
-        perror("mprotect failed");
-        return;
-    }
-    LOGE("malloc plt  addr  0x%lx",addr);
-
-    LOGE("malloc func addr 0x%lx",*addr);
-    LOGE("malloc plt addr 0x%p",&malloc);
-    LOGE("malloc func addr  0x%lx",malloc);
-//malloc plt  addr  0x6fc25f3250
-// malloc func addr 0x70c88b3090
-    malloc_old = reinterpret_cast<void *(*)(size_t)>(*addr);
-    *addr = reinterpret_cast<uintptr_t >(malloc_new);
+    soinfo custom_si ;
+    custom_si.transform(si);
+    custom_si.pltHook("malloc", (void *) malloc_new, reinterpret_cast<void *&>(malloc_old));
+//    uintptr_t *addr = static_cast<uintptr_t *>(custom_si->getPltFunAddrByName("malloc"));
+//    size_t page_size = sysconf(_SC_PAGE_SIZE);
+//    void *aligned_address = (void *)((uintptr_t)addr & ~(page_size - 1));
+//
+//    int re = mprotect((void*)aligned_address,page_size,PROT_READ|PROT_WRITE);
+//    if(re == -1){
+//        perror("mprotect failed");
+//        return;
+//    }
+//    LOGE("malloc plt  addr  0x%lx",addr);
+//
+//    LOGE("malloc func addr 0x%lx",*addr);
+//    LOGE("malloc plt addr 0x%p",&malloc);
+//    LOGE("malloc func addr  0x%lx",malloc);
+////malloc plt  addr  0x6fc25f3250
+//// malloc func addr 0x70c88b3090
+//    malloc_old = reinterpret_cast<void *(*)(size_t)>(*addr);
+//    *addr = reinterpret_cast<uintptr_t >(malloc_new);
     void * text = malloc(1);
 }
 //(lldb) x 0x6fc25f3250

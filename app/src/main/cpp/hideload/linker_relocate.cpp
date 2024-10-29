@@ -5,6 +5,8 @@
 
 
 
+#include <asm-generic/mman-common.h>
+#include <sys/mman.h>
 #include "linker_relocate.h"
 #include "linker_soinfo.h"
 #include "linker_phdr.h"
@@ -620,7 +622,19 @@ bool soinfo::relocate(const SymbolLookupList& lookup_list) {
 
     return true;
 }
-
+int soinfo::pltHook(char * plt_fun_name,void * new_fun ,void * &old_fun){
+    uintptr_t *addr = static_cast<uintptr_t *>(this->getPltFunAddrByName(plt_fun_name));
+    size_t page_size = sysconf(_SC_PAGE_SIZE);
+    void *aligned_address = (void *)((uintptr_t)addr & ~(page_size - 1));
+    int re = mprotect((void*)aligned_address,page_size,PROT_READ|PROT_WRITE);
+    if(re == -1){
+        perror("mprotect failed");
+        return -1;
+    }
+    old_fun = reinterpret_cast<void *>(*addr);
+    *addr = reinterpret_cast<uintptr_t >(new_fun);
+    return 0;
+}
 void* soinfo::getPltFunAddrByName(char*fun_name) const {
 
 
