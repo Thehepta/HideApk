@@ -635,6 +635,21 @@ int soinfo::pltHook(char * plt_fun_name,void * new_fun ,void * &old_fun){
     *addr = reinterpret_cast<uintptr_t >(new_fun);
     return 0;
 }
+int soinfo::pltUnHook(char * plt_fun_name,void * new_fun){
+    uintptr_t *addr = static_cast<uintptr_t *>(this->getPltFunAddrByName(plt_fun_name));
+    size_t page_size = sysconf(_SC_PAGE_SIZE);
+    void *aligned_address = (void *)((uintptr_t)addr & ~(page_size - 1));
+    int re = mprotect((void*)aligned_address,page_size,PROT_READ|PROT_WRITE);
+    if(re == -1){
+        perror("mprotect failed");
+        return -1;
+    }
+    *addr = reinterpret_cast<uintptr_t >(new_fun);
+    return 0;
+}
+
+
+
 void* soinfo::getPltFunAddrByName(char*fun_name) const {
 
 
@@ -646,7 +661,7 @@ void* soinfo::getPltFunAddrByName(char*fun_name) const {
         const char* sym_name = nullptr;
         if (r_sym != 0) {
             sym_name = this->strtab_+  this->symtab_[r_sym].st_name;
-            LOGE("plt name :%s st_value: %x",sym_name,this->symtab_[r_sym].st_value);
+//            LOGE("plt name :%s st_value: %x",sym_name,this->symtab_[r_sym].st_value);
             if(strncmp(fun_name,sym_name, strlen(fun_name))==0){
                 void*  rel_target = reinterpret_cast<void *>(reloc.r_offset + this->load_bias);
                 return rel_target;
@@ -655,9 +670,9 @@ void* soinfo::getPltFunAddrByName(char*fun_name) const {
     }
 #else
     //这个并未实现 目前只在android上使用
-    for(int i =0;i< this->plt_rela_count_;i++){
-
-    }
+//    for(int i =0;i< this->plt_rela_count_;i++){
+//
+//    }
 #endif
     return nullptr;
 }

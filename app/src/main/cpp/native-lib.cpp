@@ -293,3 +293,10 @@ Java_com_hepta_hideapk_MainActivity_classloadDexmerge(JNIEnv *env, jobject thiz,
     char* pkgName = const_cast<char *>(env->GetStringUTFChars(source, nullptr));
     Class_DexFile_Merge(env,pkgName,class_loader);
 }
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_hepta_hideapk_MainActivity_plt_1hook(JNIEnv *env, jobject thiz) {
+    PLT_HOOK();
+}

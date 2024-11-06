@@ -221,7 +221,8 @@ public:
 //    size_t get_ref_count() const;
 
 //    soinfo* get_local_group_root() const;
-    int pltHook(char * plt_fun_name,void * old_fun,void * &new_fun);
+    int pltHook(char * plt_fun_name,void * new_fun ,void * &old_fun);
+    int pltUnHook(char * plt_fun_name,void * new_fun);
     void* getPltFunAddrByName(char*fun_name) const;
     void set_soname(const char* soname);
     const char* get_soname() const;

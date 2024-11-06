@@ -508,6 +508,10 @@ void *custom_dlsym(void *si,char* syn_name) {
 }
 void* (*malloc_old) (size_t __byte_count);
 void* malloc_new(size_t __byte_count){
+    soinfo* si = find_system_library_byname("libhideapk.so");
+    soinfo custom_si ;
+    custom_si.transform(si);
+    custom_si.pltUnHook("malloc", (void *) malloc_old);
     LOGE("plt malloc hook call");
     return malloc_old(__byte_count);
 }
@@ -518,11 +522,6 @@ void  PLT_HOOK(){
     soinfo custom_si ;
     custom_si.transform(si);
     custom_si.pltHook("malloc", (void *) malloc_new, reinterpret_cast<void *&>(malloc_old));
-//    uintptr_t *addr = static_cast<uintptr_t *>(custom_si->getPltFunAddrByName("malloc"));
-//    size_t page_size = sysconf(_SC_PAGE_SIZE);
-//    void *aligned_address = (void *)((uintptr_t)addr & ~(page_size - 1));
-//
-//    int re = mprotect((void*)aligned_address,page_size,PROT_READ|PROT_WRITE);
 //    if(re == -1){
 //        perror("mprotect failed");
 //        return;
@@ -537,15 +536,11 @@ void  PLT_HOOK(){
 //    malloc_old = reinterpret_cast<void *(*)(size_t)>(*addr);
 //    *addr = reinterpret_cast<uintptr_t >(malloc_new);
     void * text = malloc(1);
+    void * text2 = malloc(2);
+
+
+
 }
 //(lldb) x 0x6fc25f3250
 //0x6fc25f3250: 90 30 8b c8 70 00 00 00 60 55 92 c8 70 00 00 00  .0..p...`U..p...
 //0x6fc25f3260: a0 1d 96 c8 70 00 00 00 30 2f 8b c8 70 00 00 00  ....p...0/..p...
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_hepta_hideapk_MainActivity_plt_1hook(JNIEnv *env, jobject thiz) {
-
-    PLT_HOOK();
-
-
-}
