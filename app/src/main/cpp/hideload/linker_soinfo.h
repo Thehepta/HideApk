@@ -254,6 +254,7 @@ public:
 
     SymbolLookupLib get_lookup_lib(bool system_sonifo);
     void transform(soinfo*);
+    void transform(ElfW(Ehdr) *ehdr);
 
 private:
 //    bool is_image_linked() const;

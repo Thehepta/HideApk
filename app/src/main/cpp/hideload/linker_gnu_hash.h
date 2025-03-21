@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <utility>
-
+#include "linker_gnu_hash_neon.h"
 #if defined(__arm__) || defined(__aarch64__)
 #define USE_GNU_HASH_NEON 1
 #else
@@ -27,9 +27,9 @@ static std::pair<uint32_t, uint32_t> calculate_gnu_hash_simple(const char* name)
 }
 
 static inline std::pair<uint32_t, uint32_t> calculate_gnu_hash(const char* name) {
-//#if USE_GNU_HASH_NEON
-//    return calculate_gnu_hash_neon(name);
-//#else
+#if USE_GNU_HASH_NEON
+    return calculate_gnu_hash_neon(name);
+#else
     return calculate_gnu_hash_simple(name);
-//#endif
+#endif
 }

@@ -36,9 +36,6 @@ soinfo* find_all_library_byname(const char* soname) ;
 soinfo* find_system_library_byname(const char* soname);
 
 
-
-
-
 #define SUPPORTED_DT_FLAGS_1 (DF_1_NOW | DF_1_GLOBAL | DF_1_NODELETE | DF_1_PIE)
 
 

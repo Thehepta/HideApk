@@ -1072,9 +1072,27 @@ void soinfo::transform(soinfo * si) {
 //        android_11_soinfo_transform(this, reinterpret_cast<soinfo_11_transform *>(si));
 //    }
 
-
 }
 
+void soinfo::transform(ElfW(Ehdr) *ehdr) {
+
+    this->base = reinterpret_cast<ElfW(Addr)>(ehdr);
+    this->flags_ = 0;
+    this->phnum = ehdr->e_phnum;
+    this->phdr = reinterpret_cast<const ElfW(Phdr)   *>(this->base + ehdr->e_phoff);
+
+    ElfW(Addr) ehdr_addr = (ElfW(Addr))ehdr;
+    for (size_t i = 0; i < ehdr->e_phnum; i++) {
+        if (phdr[i].p_type == PT_DYNAMIC) {
+            dynamic = reinterpret_cast<ElfW(Dyn) *>(ehdr_addr + phdr[i].p_offset);
+        } else if (phdr[i].p_type == PT_LOAD) {
+            this->load_bias = ehdr_addr - (phdr[i].p_vaddr - phdr[i].p_offset);
+        } else if (phdr[i].p_type == PT_PHDR) {
+            this->load_bias = (ElfW(Addr))phdr - phdr[i].p_vaddr;
+        }
+    }
+    this->prelink_image();
+}
 
 
 ElfW(Addr) soinfo::resolve_symbol_address(const ElfW(Sym)* s) const  {
