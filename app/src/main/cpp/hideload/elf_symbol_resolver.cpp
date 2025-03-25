@@ -145,15 +145,18 @@ static std::vector<RuntimeModule> & getProcessMapWithProcMaps(){
     return *modules;
 }
 
+bool ends_with(std::string_view str, std::string_view suffix) {
+    return str.size() >= suffix.size() &&
+           str.substr(str.size() - suffix.size()) == suffix;
+}
+
 RuntimeModule GetProcessMaps(const char *name) {
     auto modules = getProcessMapWithProcMaps();
     for (auto module : modules) {
-        if (strstr(module.path, name) != 0) {
+        if (ends_with(module.path, name) != 0) {
             return module;
         }
     }
-
-
 
     return RuntimeModule{0};
 }
@@ -278,7 +281,6 @@ void *linkerResolveElfInternalSymbol(const char *library_name, const char *symbo
             return NULL;
         }
 
-
         linkerElfCtxInit(&ctx, mmap_buffer);
         result = linkerElfCtxIterateSymbolTable(&ctx, symbol_name);
 
@@ -294,6 +296,9 @@ void *linkerResolveElfInternalSymbol(const char *library_name, const char *symbo
 }
 
 
+// 当加载的so不存在随机偏移的时候,so的base=load_bias,这个时候,我们可以直接从map文件中获取load_bias,然后加上函数偏移就是函数的地址
+// 这个函数是建立在base=load_bias,这个时候我们可以轻而易举解析内存中的so文件为soinfo格式,然后通过soinfo 寻找函数的方式找到对应的函数.
+// 这种方式相比于文件查找函数更快,并且不需要打开文件
 void *linkerResolveElfInternalSymbol2(const char *library_name, const char *symbol_name) {
     void *result = NULL;
 
@@ -312,11 +317,6 @@ void *linkerResolveElfInternalSymbol2(const char *library_name, const char *symb
 
     return result;
 }
-
-
-
-
-
 
 
 

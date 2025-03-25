@@ -387,7 +387,6 @@ jobject FilehideLoadApkModule(JNIEnv *env, char * apkSource){
 
 jobject memhideLoadApkModule(JNIEnv *env, unsigned char *zip_data, size_t zip_size) {
 
-
     // 使用 miniz 库解压缩内存中的 zip 文件
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
@@ -404,7 +403,6 @@ jobject memhideLoadApkModule(JNIEnv *env, unsigned char *zip_data, size_t zip_si
 
 void Class_DexFile_Merge(JNIEnv *env,  char *apkSource, jobject classloader){
 
-
     // 使用 miniz 库解压缩内存中的 zip 文件
     mz_zip_archive zip_archive;
     memset(&zip_archive, 0, sizeof(zip_archive));
@@ -417,8 +415,6 @@ void Class_DexFile_Merge(JNIEnv *env,  char *apkSource, jobject classloader){
     Load_dexfile_Merge_classLoader(env,zip_archive,classloader);
 
 }
-
-
 
 void *load_so_by_fd(int fd){
     std::unordered_map<const soinfo*, ElfReader> readers_map;
@@ -497,8 +493,6 @@ void *custom_dlopen(const char *file_data){
 
 void *custom_dlsym(void *si,char* syn_name) {
     SymbolName symbol_name(syn_name);
-
-
     const ElfW(Sym)* sym = ((soinfo*)si)->find_symbol_by_name(symbol_name, nullptr);;
     if(sym== nullptr){
         return nullptr;

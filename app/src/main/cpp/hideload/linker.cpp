@@ -19,14 +19,18 @@
 #include "linker_utils.h"
 
 
-soinfo* (*solist_get_head)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__Z15solist_get_headv");
+soinfo* (*solist_get_head)();
+soinfo* (*solist_get_somain)();
+char* (*soinfo_get_soname)(soinfo*);
 
-soinfo* (*solist_get_somain)() = (soinfo* (*)()) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__Z17solist_get_somainv");
+__unused __attribute__((constructor(101)))
+void system_Linker_init(){
+    solist_get_head = (soinfo* (*)()) linkerResolveElfInternalSymbol2( get_android_linker_path(), "__dl__Z15solist_get_headv");
+    solist_get_somain = (soinfo* (*)()) linkerResolveElfInternalSymbol2(get_android_linker_path(), "__dl__Z17solist_get_somainv");
+    soinfo_get_soname = (char* (*)(soinfo*)) linkerResolveElfInternalSymbol2(get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
+}
 
-char* (*soinfo_get_soname)(soinfo*) = (char* (*)(soinfo*)) linkerResolveElfInternalSymbol(
-        get_android_linker_path(), "__dl__ZNK6soinfo10get_sonameEv");
+
 
 
 

@@ -209,8 +209,6 @@ Java_com_hepta_hideapk_MainActivity_soglobal(JNIEnv *env, jobject thiz, jstring 
 }
 
 
-
-
 __attribute__((constructor)) static void beforeFunction()
 {
     LOGE("beforeFunction\n");
@@ -221,6 +219,9 @@ JNIEXPORT void JNICALL
 Java_com_hepta_hideapk_MainActivity_customhideSoLoad(JNIEnv *env, jobject thiz,
                                                      jstring libname_path) {
     // TODO: implement customhideSoLoad()
+
+
+
 }
 extern "C"
 JNIEXPORT void JNICALL
