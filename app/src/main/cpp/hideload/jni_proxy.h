@@ -404,8 +404,9 @@ struct Linker_JNIEnv {
     /* do not rename this; it does not seem to be entirely opaque */
     struct Linker_JNINativeInterface* functions;
     JNIEnv * env;
+    Linker_JavaVM * vm;
     jobject classLoader;
-    Linker_JNIEnv(JNIEnv *env, jobject pJobject);
+    Linker_JNIEnv(JNIEnv *env, jobject pJobject,Linker_JavaVM * vm);
 };
 
 

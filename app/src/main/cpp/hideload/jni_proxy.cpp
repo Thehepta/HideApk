@@ -22,7 +22,7 @@ jint  GetEnv(JavaVM * vm, void** env, jint version){
     HOOKLOGE("GetEnv");
     Linker_JavaVM* linkerJavaVm = (Linker_JavaVM *) vm;
     int re = linkerJavaVm->vm->GetEnv(env, version);
-    Linker_JNIEnv * linkerJniEnv = new Linker_JNIEnv((JNIEnv *) *env, linkerJavaVm->classLoader);
+    Linker_JNIEnv * linkerJniEnv = new Linker_JNIEnv((JNIEnv *) *env, linkerJavaVm->classLoader,linkerJavaVm);
     *env = linkerJniEnv;
     return re;
 }
@@ -63,9 +63,10 @@ Linker_JavaVM::Linker_JavaVM(JavaVM *vm,jobject classLoader) {
 
 
 const char* GetStringUTFChars(JNIEnv * env,jstring string, jboolean* isCopy){
-    HOOKLOGE("GetStringUTFChars");
     Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
     JNIEnv * functions = linkerJniEnv->env;
+    HOOKLOGE("GetStringUTFChars %s",functions->GetStringUTFChars(string,nullptr));
+
     return functions->GetStringUTFChars( string, isCopy);
 
 }
@@ -84,14 +85,17 @@ jclass DefineClass(JNIEnv * env,const char *name, jobject loader, const jbyte* b
 
 
 jclass FindClass(JNIEnv * env,const char* name){
-    HOOKLOGE("FindClass:%s",name);
+//    HOOKLOGE("FindClass:%s",name);
     Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
     JNIEnv * functions = linkerJniEnv->env;
-    jstring FindClass_name = functions->NewStringUTF(name);
-    auto classloader = functions->FindClass("java/lang/ClassLoader");
-    jmethodID method_loadClass = functions->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-    jobject FindClass_name_cls_obj = functions->CallObjectMethod(linkerJniEnv->classLoader,method_loadClass,FindClass_name);
-    return static_cast<jclass>(FindClass_name_cls_obj);
+    if(linkerJniEnv->classLoader!= nullptr){
+        jstring FindClass_name = functions->NewStringUTF(name);
+        auto classloader = functions->FindClass("java/lang/ClassLoader");
+        jmethodID method_loadClass = functions->GetMethodID(classloader,"loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+        jobject FindClass_name_cls_obj = functions->CallObjectMethod(linkerJniEnv->classLoader,method_loadClass,FindClass_name);
+        return static_cast<jclass>(FindClass_name_cls_obj);
+    }
+    return  functions->FindClass(name);
 }
 jmethodID FromReflectedMethod(JNIEnv * env,jobject method)
 {
@@ -282,12 +286,13 @@ jmethodID GetMethodID(JNIEnv * env,jclass clazz, const char* name, const char* s
 
 
 jobject CallObjectMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
+    HOOKLOGE("CallObjectMethod");
 
     Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jobject re = functions->CallObjectMethod(obj, methodID, args);
+    jobject re = functions->CallObjectMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -311,7 +316,7 @@ jboolean CallBooleanMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jboolean re = functions->CallBooleanMethod(obj, methodID, args);
+    jboolean re = functions->CallBooleanMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -335,7 +340,7 @@ jbyte CallByteMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jbyte re = functions->CallByteMethod(obj, methodID, args);
+    jbyte re = functions->CallByteMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -360,7 +365,7 @@ jchar CallCharMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jchar re = functions->CallCharMethod(obj, methodID, args);
+    jchar re = functions->CallCharMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -384,7 +389,7 @@ jshort CallShortMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jshort re = functions->CallShortMethod(obj, methodID, args);
+    jshort re = functions->CallShortMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -408,7 +413,7 @@ jint CallIntMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jint re = functions->CallIntMethod(obj, methodID, args);
+    jint re = functions->CallIntMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -432,7 +437,7 @@ jlong CallLongMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jlong re = functions->CallLongMethod(obj, methodID, args);
+    jlong re = functions->CallLongMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -457,7 +462,7 @@ jfloat CallFloatMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jfloat re = functions->CallFloatMethod(obj, methodID, args);
+    jfloat re = functions->CallFloatMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -481,7 +486,7 @@ jdouble CallDoubleMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jdouble re = functions->CallDoubleMethod(obj, methodID, args);
+    jdouble re = functions->CallDoubleMethodV(obj, methodID, args);
     va_end(args);
     return  re;
 }
@@ -504,7 +509,7 @@ void CallVoidMethod(JNIEnv*env, jobject obj, jmethodID methodID, ...){
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    functions->CallVoidMethod(obj, methodID, args);
+    functions->CallVoidMethodV(obj, methodID, args);
     va_end(args);
 }
 void CallVoidMethodV(JNIEnv*env, jobject obj, jmethodID methodID, va_list args){
@@ -523,7 +528,7 @@ jobject CallNonvirtualObjectMethod(JNIEnv*env, jobject obj,jclass clazz, jmethod
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jobject re = functions->CallNonvirtualObjectMethod(obj,clazz, methodID, args);
+    jobject re = functions->CallNonvirtualObjectMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -543,7 +548,7 @@ jboolean CallNonvirtualBooleanMethod(JNIEnv*env, jobject obj,jclass clazz, jmeth
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jboolean re = functions->CallNonvirtualBooleanMethod(obj,clazz, methodID, args);
+    jboolean re = functions->CallNonvirtualBooleanMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -563,7 +568,7 @@ jbyte CallNonvirtualByteMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID m
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jbyte re = functions->CallNonvirtualByteMethod(obj,clazz, methodID, args);
+    jbyte re = functions->CallNonvirtualByteMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -583,7 +588,7 @@ jchar CallNonvirtualCharMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID m
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jchar re = functions->CallNonvirtualCharMethod(obj,clazz, methodID, args);
+    jchar re = functions->CallNonvirtualCharMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -604,7 +609,7 @@ jshort CallNonvirtualShortMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jshort re = functions->CallNonvirtualShortMethod(obj,clazz, methodID, args);
+    jshort re = functions->CallNonvirtualShortMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -625,7 +630,7 @@ jint CallNonvirtualIntMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID met
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jint re = functions->CallNonvirtualIntMethod(obj,clazz, methodID, args);
+    jint re = functions->CallNonvirtualIntMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -646,7 +651,7 @@ jlong CallNonvirtualLongMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID m
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jlong re = functions->CallNonvirtualLongMethod(obj,clazz, methodID, args);
+    jlong re = functions->CallNonvirtualLongMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -667,7 +672,7 @@ jfloat CallNonvirtualFloatMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jfloat re = functions->CallNonvirtualFloatMethod(obj,clazz, methodID, args);
+    jfloat re = functions->CallNonvirtualFloatMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -688,7 +693,7 @@ jdouble CallNonvirtualDoubleMethod(JNIEnv*env, jobject obj,jclass clazz, jmethod
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    jdouble re = functions->CallNonvirtualDoubleMethod(obj,clazz, methodID, args);
+    jdouble re = functions->CallNonvirtualDoubleMethodV(obj,clazz, methodID, args);
     va_end(args);
     return re;
 }
@@ -709,7 +714,7 @@ void CallNonvirtualVoidMethod(JNIEnv*env, jobject obj,jclass clazz, jmethodID me
     JNIEnv * functions = linkerJniEnv->env;
     va_list args;
     va_start(args, methodID);
-    functions->CallNonvirtualDoubleMethod(obj,clazz, methodID, args);
+    functions->CallNonvirtualDoubleMethodV(obj,clazz, methodID, args);
     va_end(args);
 }
 void CallNonvirtualVoidMethodV(JNIEnv*env, jobject obj,jclass clazz, jmethodID methodID, va_list args){
@@ -896,7 +901,7 @@ void CallStaticVoidMethod(JNIEnv* env,jclass clazz, jmethodID methodID, ...)
     va_start(args, methodID);
     Linker_JNIEnv * linkerJniEnv = (Linker_JNIEnv *) env;
     JNIEnv * functions = linkerJniEnv->env;
-    functions->CallStaticVoidMethod( clazz, methodID, args);
+    functions->CallStaticVoidMethodV( clazz, methodID, args);
     va_end(args);
 }
 void CallStaticVoidMethodV(JNIEnv* env,jclass clazz, jmethodID methodID, va_list args)
@@ -1489,8 +1494,9 @@ jobjectRefType GetObjectRefType(JNIEnv* env,jobject obj)
     JNIEnv * functions = linkerJniEnv->env;
     return functions->GetObjectRefType( obj); }
 
-Linker_JNIEnv::Linker_JNIEnv(JNIEnv *env, jobject classLoader) {
+Linker_JNIEnv::Linker_JNIEnv(JNIEnv *env, jobject classLoader,Linker_JavaVM * vm) {
     this->env = env;
+    this->vm = vm;
     this->classLoader = classLoader;
     functions = new Linker_JNINativeInterface();
     functions->GetVersion =  GetVersion;
