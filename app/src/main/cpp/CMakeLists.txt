@@ -17,7 +17,6 @@ include_directories(./)
 add_subdirectory(hideload)
 
 
-
 add_library( # Sets the name of the library.
         hideapk
 
