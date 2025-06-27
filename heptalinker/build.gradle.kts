@@ -7,10 +7,10 @@ plugins {
 
 android {
     namespace = "com.hepta.linker"
-    compileSdk = 35
+    compileSdk = 33
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
         version = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -18,6 +18,8 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags("")
+                abiFilters ("armeabi-v7a", "arm64-v8a")
+
             }
         }
     }
@@ -48,6 +50,8 @@ android {
     publishing {
         singleVariant("release")
     }
+    ndkVersion = "27.0.12077973"
+
 }
 
 dependencies {

@@ -22,5 +22,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "HideApk"
 include (":app")
-//include ':fridaload')
+include (":dev")
 include(":heptalinker")

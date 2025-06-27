@@ -10,6 +10,7 @@ cmake_minimum_required(VERSION 3.22.1)
 # with ${CMAKE_PROJECT_NAME} (both CMake variables are in-sync within the top level
 # build script scope).
 project("linker")
+add_subdirectory(hideload)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -33,5 +34,5 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 # build script, prebuilt third-party libraries, or Android system libraries.
 target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
-        android
+        hideload
         log)
